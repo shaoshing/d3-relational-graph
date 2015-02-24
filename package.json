@@ -1,0 +1,17 @@
+{
+  "name": "d3-relational-graph",
+  "version": "0.0.1",
+  "description": "",
+  "main": "app.js",
+  "engines": {
+    "node": "0.10.28"
+  },
+  "dependencies": {
+    "express": "^4.10.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": ""
+}
