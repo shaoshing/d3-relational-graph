@@ -537,7 +537,7 @@
     function updatePositions(){
       self.positions.svgWidth = parseInt(self.svg.style('width'));
       self.positions.svgHeight = parseInt(self.svg.style('height'));
-      if(self._highlightedNode) self.centerNode(self._highlightedNode.groupId);
+      if(self._highlightedNode) self.centerNode(self._highlightedNode.nodeId);
     }
   };
 
