@@ -34,9 +34,15 @@
     circleStroke: '#999',   // circle stroke color
     circleStrokeWidth: 1,   // circle stroke width
 
-    circleHighlightedScale: 1.5,
-    circleHighlightedStroke: '#888',
-    circleHighlightedStrokeWidth: 2,
+    circleHighlightedScale: 1,
+    circleHighlightedFill: null,
+    circleHighlightedStroke: null,
+    circleHighlightedStrokeWidth: null,
+
+    circleCenterScale: 1.5,
+    circleCenterFill: null,
+    circleCenterStroke: null,
+    circleCenterStrokeWidth: null,
 
     labelFontSize: 12,      // lable (beside its circle) font size
   };
@@ -66,6 +72,10 @@
   }
   window.D3RGraph = Graph;
   Graph.Events = EVENTS;
+  Graph.DEFAULT_OPTIONS = DEFAULT_OPTIONS;
+  Graph.DEFAULT_LINK_STYLES = DEFAULT_LINK_STYLES;
+  Graph.DEFAULT_NODE_STYLES = DEFAULT_NODE_STYLES;
+  Graph.DEFAULT_GLOBAL_STYLES = DEFAULT_GLOBAL_STYLES;
 
   Graph.prototype.draw = function(){
     var self = this;
@@ -332,27 +342,34 @@
 
     // Perform Annimation
     this.svg.selectAll('.masked').attr('opacity', this.styles.maskedOpacity);
-    var style = this._getStyle('.highlighted-node.center circle');
-    var scale = 'scale('+style.circleHighlightedScale+','+style.circleHighlightedScale+')';
-    this.svg.select('.highlighted-node.center circle')
-        .style('transform', scale)
-        .style('-webkit-transform', scale) // safari
-        .attr('stroke', style.circleHighlightedStroke)
-        .attr('stroke-width', style.circleHighlightedStrokeWidth);
+    this.svg.selectAll('.highlighted-node circle')
+        .style('transform', function(d){
+          return scaleAttr(d.id === nodeId ? d.styles.circleCenterScale : d.styles.circleHighlightedScale);
+        })
+        .style('-webkit-transform', function(d){ // fix safari
+          return scaleAttr(d.id === nodeId ? d.styles.circleCenterScale : d.styles.circleHighlightedScale);
+        })
+        .attr('fill', function(d){
+          return d.id === nodeId ? d.styles.circleCenterFill : d.styles.circleHighlightedFill;
+        })
+        .attr('stroke', function(d){
+          return d.id === nodeId ? d.styles.circleCenterStroke : d.styles.circleHighlightedStroke;
+        })
+        .attr('stroke-width', function(d){
+          return d.id === nodeId ? d.styles.circleCenterStrokeWidth : d.styles.circleHighlightedStrokeWidth;
+        });
   };
 
   Graph.prototype.unhighlightNodes = function(){
     this._highlightedNode = null;
     this.svg.selectAll('.masked').attr('opacity', 1);
 
-    var style = this._getStyle('.highlighted-node.center circle');
-    if(style){
-      this.svg.select('.highlighted-node.center circle')
+    this.svg.selectAll('.highlighted-node circle')
         .style('transform', 'scale(1,1)')
         .style('-webkit-transform', 'scale(1,1)') // safari
-        .attr('stroke', style.circleStroke)
-        .attr('stroke-width', style.circleStrokeWidth);
-    }
+        .attr('fill', function(d){return d.styles.circleFill;})
+        .attr('stroke', function(d){return d.styles.circleStroke;})
+        .attr('stroke-width', function(d){return d.styles.circleStrokeWidth;});
 
     this.nodes
         .classed('masked', false)
@@ -512,11 +529,6 @@
     return [x, y];
   };
 
-  Graph.prototype._getStyle = function(selector) {
-    var data = this.svg.select(selector).data()[0];
-    return data ? data.styles : null;
-  };
-
   Graph.prototype._bindResizeEvent = function(){
     var self = this;
     updatePositions();
@@ -536,7 +548,14 @@
     for(var i = 0; i < nodes.length; i++){
       var node = nodes[i];
       node.id = idPrefix+(node.id || i).toString();
-      node.styles = merge(DEFAULT_NODE_STYLES, node.styles);
+      var styles = merge(DEFAULT_NODE_STYLES, data.styles);
+      node.styles = merge(styles, node.styles);
+      node.styles.circleHighlightedFill = node.styles.circleHighlightedFill || node.styles.circleFill;
+      node.styles.circleHighlightedStroke = node.styles.circleHighlightedStroke || node.styles.circleStroke;
+      node.styles.circleHighlightedStrokeWidth = node.styles.circleHighlightedStrokeWidth || node.styles.circleStrokeWidth;
+      node.styles.circleCenterFill = node.styles.circleCenterFill || node.styles.circleFill;
+      node.styles.circleCenterStroke = node.styles.circleCenterStroke || node.styles.circleStroke;
+      node.styles.circleCenterStrokeWidth = node.styles.circleCenterStrokeWidth || node.styles.circleStrokeWidth;
     }
 
     var links = data.links;
@@ -557,5 +576,9 @@
       result[key] = from[key];
     }
     return result;
+  }
+
+  function scaleAttr(scale) {
+    return 'scale('+scale+','+scale+')';
   }
 })();
