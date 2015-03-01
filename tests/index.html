@@ -6,12 +6,17 @@
   <link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.17.1.css">
 </head>
 <body>
-  <div style="width: 100%">
-    <div style="width: 830px; height: 400px; margin: 10px auto; ">
-      <svg id="graph-1" style="width: 400px; height: 100%; border: 1px solid #ddd"></svg>
-      <svg id="graph-2" style="width: 400px; height: 100%; border: 1px solid #ddd; float: right"></svg>
+  <div style="width: 100%; height: 500px">
+    <div style="width: 830px; margin: 0 auto;">
+      <div style="width: 400px; height: 450px; float: left;">
+        <div>Data 1</div>
+        <svg id="graph-1" style="width: 100%; height: 100%; border: 1px solid #ddd"></svg>
+      </div>
+      <div style="width: 400px; height: 450px; float: right;">
+        <div>Data 2</div>
+        <svg id="graph-2" style="width: 100%; height: 100%; border: 1px solid #ddd"></svg>
+      </div>
     </div>
-
   </div>
   <div id="qunit"></div>
   <div id="qunit-fixture"></div>

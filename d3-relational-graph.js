@@ -298,7 +298,7 @@
     this._highlightedNode = {nodeId: nodeId, options: options};
 
     if(options.cancelPreviousHighlightedNode){
-      var previousNode = this.svg.select('.highlighted-central-node').data()[0];
+      var previousNode = this.svg.select('.highlighted-node.center').data()[0];
       if(previousNode && previousNode.id !== nodeId){
         this.unhighlightNodes();
       }
@@ -309,10 +309,11 @@
     this.nodes.classed('masked', true);
     this.links.classed('masked', true);
 
-    var centralNodeSelector = '#graph-group-' + nodeId;
-    this.svg.select(centralNodeSelector)
+    var centerNodeSelector = '#graph-group-' + nodeId;
+    this.svg.select(centerNodeSelector)
         .classed('masked', false)
-        .classed('highlighted-central-node', true);
+        .classed('highlighted-node', true)
+        .classed('center', true);
 
     if(options.highlightRelated){
       var connections = this.getRelations(nodeId);
@@ -331,9 +332,9 @@
 
     // Perform Annimation
     this.svg.selectAll('.masked').attr('opacity', this.styles.maskedOpacity);
-    var style = this._getStyle('.highlighted-central-node circle');
+    var style = this._getStyle('.highlighted-node.center circle');
     var scale = 'scale('+style.circleHighlightedScale+','+style.circleHighlightedScale+')';
-    this.svg.select('.highlighted-central-node circle')
+    this.svg.select('.highlighted-node.center circle')
         .style('transform', scale)
         .style('-webkit-transform', scale) // safari
         .attr('stroke', style.circleHighlightedStroke)
@@ -344,9 +345,9 @@
     this._highlightedNode = null;
     this.svg.selectAll('.masked').attr('opacity', 1);
 
-    var style = this._getStyle('.highlighted-central-node circle');
+    var style = this._getStyle('.highlighted-node.center circle');
     if(style){
-      this.svg.select('.highlighted-central-node circle')
+      this.svg.select('.highlighted-node.center circle')
         .style('transform', 'scale(1,1)')
         .style('-webkit-transform', 'scale(1,1)') // safari
         .attr('stroke', style.circleStroke)
@@ -356,7 +357,7 @@
     this.nodes
         .classed('masked', false)
         .classed('highlighted-node', false)
-        .classed('highlighted-central-node', false)
+        .classed('center', false)
         .classed('highlighted-edge', false);
 
     this.links

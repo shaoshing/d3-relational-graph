@@ -18,6 +18,8 @@ var data1 = {
       circleHighlightedScale: 2,
       circleHighlightedStroke: 'blue',
       circleHighlightedStrokeWidth: 1.2,
+
+
     }
   }, {
     title: 'has title',
@@ -68,8 +70,11 @@ graph1.on(D3RGraph.Events.NODE_CLICK, function(graph, node){firedEvents.nodeClic
 jQuery.fn.d3Click = function () {
   this.each(function (i, e) {
     var evt = document.createEvent("MouseEvents");
-    evt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+    evt.initMouseEvent('mousedown', true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+    e.dispatchEvent(evt);
 
+    evt = document.createEvent("MouseEvents");
+    evt.initMouseEvent('mouseup', true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
     e.dispatchEvent(evt);
   });
 };
@@ -121,9 +126,13 @@ function runTests() {
     equal(line.attr('stroke'), 'black');
     equal(line.attr('stroke-width'), '4');
 
-    var done = assert.async();
+
     $('#'+data1.nodes[0].groupId).d3Click();
+    console.log('click');
+
+    var done = assert.async();
     setTimeout(function(){
+      console.log('timeout');
       equal(circle.attr('stroke'), 'blue');
       equal(circle.attr('stroke-width'), '1.2');
       done();
@@ -146,7 +155,7 @@ function runTests() {
     $('#'+data2.nodes[1].groupId).d3Click();
     setTimeout(function(){
       ok($('#'+data2.nodes[0].groupId).attr('class').indexOf('highlighted-node') !== -1);
-      ok($('#'+data2.nodes[1].groupId).attr('class').indexOf('highlighted-central-node') !== -1);
+      ok($('#'+data2.nodes[1].groupId).attr('class').indexOf('highlighted-node center') !== -1);
       ok($('#'+data2.nodes[2].groupId).attr('class').indexOf('highlighted-node') === -1);
 
       var relations = graph2.getRelations(data2.nodes[1].id);
