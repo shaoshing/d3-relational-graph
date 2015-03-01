@@ -105,6 +105,7 @@
       node.groupId = 'graph-group-' + node.id;
       node.circleId = 'graph-circle-' + node.id;
       node.textId = 'graph-text-' + node.id;
+      node.typeClass = 'graph-type-' + (node.type || 'none');
     });
 
     self.graphJson.links.forEach(function(link) {
@@ -201,6 +202,7 @@
           .enter()
             .append('g')
             .attr('title', function(d){ return d.title; })
+            .attr('class', function(d){ return d.typeClass; })
             .attr('id', function(d){ return d.groupId; })
             .attr('transform', function(d) {
               self.positions.maxNodeX = Math.max(self.positions.maxNodeX || d.x, d.x);
@@ -384,6 +386,36 @@
     this._keepHighlighting = false;
   };
 
+  Graph.prototype.toggleNodesByType = function(type){
+    var typeClass = '.graph-type-' + type;
+    var nodeIds = [];
+    var lineIds = [];
+    var nodes = this.svg.selectAll(typeClass).data();
+    if(nodes.length === 0) return;
+
+    var toShow = !nodes[0].shown;
+
+    for(var i = 0; i < nodes.length; i++){
+      var node = nodes[i];
+      node.shown = toShow;
+      nodeIds.push(node.groupId);
+
+      var relations = this.getRelations(node.id);
+      if(relations){
+        for(var j = 0; j < relations.links.length; j ++){
+          var link = relations.links[j];
+          if(!toShow || (toShow && link.target.shown === link.source.shown))
+            lineIds.push(link.lineId);
+        }
+      }
+    }
+
+    if(nodeIds.length !== 0)
+      this.svg.selectAll('#'+nodeIds.join(', #')).style('display', toShow ? 'inline' : 'none');
+    if(lineIds.length !== 0)
+      this.svg.selectAll('#'+lineIds.join(', #')).style('display', toShow ? 'inline' : 'none');
+  };
+
   Graph.prototype.zoom = function(scale){
     if(!scale) return this.zoomBehavior.scale();
     if(scale < this.options.zoomMinScale || scale > this.options.zoomMaxScale) return false;
@@ -552,6 +584,7 @@
     for(var i = 0; i < nodes.length; i++){
       var node = nodes[i];
       node.id = idPrefix+(node.id || i).toString();
+      node.shown = true;
       var styles = merge(DEFAULT_NODE_STYLES, data.styles);
       node.styles = merge(styles, node.styles);
       node.styles.circleHighlightedFill = node.styles.circleHighlightedFill || node.styles.circleFill;

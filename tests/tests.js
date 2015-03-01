@@ -49,16 +49,23 @@ var data1 = {
 
 var data2 = {
   nodes: [{
-    title: null
+    title: null,
+    type: 'a'
   }, {
     title: 'has title',
-    id: 'has-id'
+    id: 'has-id',
+    type: 'b'
   }, {
-    title: 'I am alone'
+    title: '3rd note',
+    type: 'a'
+  }, {
+    title: '4th node',
+    type: 'c'
   }],
-  links: [{
-    source: 0, target: 1
-  }]
+  links: [
+    {source: 0, target: 1 },
+    {source: 0, target: 2 }
+  ]
 };
 
 var graph1 = new D3RGraph('#graph-1', data1, {
@@ -217,11 +224,42 @@ function runTests() {
       equal(relations.lineIds.length, 1);
       equal(relations.nodes[0], data2.nodes[0]);
 
-      relations = graph2.getRelations(data2.nodes[2].id);
-      ok(!relations, 'the 3rd node does not have any relations');
+      relations = graph2.getRelations(data2.nodes[3].id);
+      ok(!relations, 'the 4th node does not have any relations');
 
       done();
     }, 700); // wait until annimation is over
+  });
+
+  test('toggle nodes by type', function(){
+    graph2.toggleNodesByType('a');
+    notEqual($('#'+data2.nodes[1].groupId).css('display'), 'none');
+    notEqual($('#'+data2.nodes[3].groupId).css('display'), 'none');
+
+    equal($('#'+data2.nodes[0].groupId).css('display'), 'none');
+    equal($('#'+data2.nodes[2].groupId).css('display'), 'none');
+    equal($('#'+data2.links[0].lineId).css('display'), 'none');
+    equal($('#'+data2.links[1].lineId).css('display'), 'none');
+
+
+    graph2.toggleNodesByType('b');
+    notEqual($('#'+data2.nodes[3].groupId).css('display'), 'none');
+
+    equal($('#'+data2.nodes[0].groupId).css('display'), 'none');
+    equal($('#'+data2.nodes[2].groupId).css('display'), 'none');
+    equal($('#'+data2.nodes[1].groupId).css('display'), 'none');
+    equal($('#'+data2.links[0].lineId).css('display'), 'none');
+    equal($('#'+data2.links[1].lineId).css('display'), 'none');
+
+
+    graph2.toggleNodesByType('a');
+    notEqual($('#'+data2.nodes[3].groupId).css('display'), 'none');
+    notEqual($('#'+data2.nodes[0].groupId).css('display'), 'none');
+    notEqual($('#'+data2.nodes[2].groupId).css('display'), 'none');
+    notEqual($('#'+data2.links[1].lineId).css('display'), 'none');
+
+    equal($('#'+data2.nodes[1].groupId).css('display'), 'none');
+    equal($('#'+data2.links[0].lineId).css('display'), 'none');
   });
 
 }
