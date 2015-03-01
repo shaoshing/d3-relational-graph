@@ -386,11 +386,14 @@
 
   Graph.prototype.zoom = function(scale){
     if(!scale) return this.zoomBehavior.scale();
+    if(scale < this.options.zoomMinScale || scale > this.options.zoomMaxScale) return false;
+
     var position = this.zoomBehavior.translate();
     this.zoomBehavior
         .translate(position)
         .scale([scale])
         .event(this.nodesContainer);
+    return true;
   };
 
   Graph.prototype.on = function(event, callback){
@@ -463,6 +466,7 @@
     var self = this;
 
     self.zoomBehavior
+        .scale([self.options.zoomInitialScale])
         .size([self.positions.nodesWidth, self.positions.nodesHeight])
         .on('zoom', function(){
           zoom(d3.event.scale, d3.event.translate);

@@ -62,7 +62,10 @@ var data2 = {
 };
 
 var graph1 = new D3RGraph('#graph-1', data1, {
-  progressiveLoading: true
+  progressiveLoading: true,
+  zoomMinScale: 0.2,
+  zoomMaxScale: 0.8,
+  zoomInitialScale: 0.4,
 });
 graph1.on(D3RGraph.Events.DREW, runTests);
 var graph2 = new D3RGraph('#graph-2', data2);
@@ -106,6 +109,16 @@ function runTests() {
     notEqual(data1.nodes[0].id, data2.nodes[0].id, 'ids should be unique between graphs');
 
     ok(data1.nodes[1].title, 'should assign title if has none');
+  });
+
+  test('zoom', function(){
+    equal(graph1.zoom(), 0.4);
+    ok(!graph1.zoom(0.1));
+    equal(graph1.zoom(), 0.4);
+    ok(!graph1.zoom(1));
+    equal(graph1.zoom(), 0.4);
+    ok(graph1.zoom(0.6));
+    equal(graph1.zoom(), 0.6);
   });
 
   test('events', function() {
