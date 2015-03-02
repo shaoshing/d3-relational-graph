@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   $('.example-basic table').html(render('#tbody-template', {rows: rows}));
   $('.example-basic table td').hover(function(){
-    basicGraph.centerNode($(this).data('node-id'));
+    basicGraph.centerItem($(this).data('node-id'));
     basicGraph.highlightNode($(this).data('node-id'));
   });
 });

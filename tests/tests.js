@@ -110,6 +110,7 @@ graph1.on(D3RGraph.Events.LOADED, function(graph){firedEvents.loaded = {graph: g
 graph1.on(D3RGraph.Events.DREW, function(graph){firedEvents.drew = {graph: graph};});
 graph1.on(D3RGraph.Events.ZOOMED, function(graph){firedEvents.zoomed = {graph: graph};});
 graph1.on(D3RGraph.Events.NODE_CLICK, function(graph, node){firedEvents.nodeClick = {graph: graph, node:node};});
+graph1.on(D3RGraph.Events.LINK_CLICK, function(graph, link){firedEvents.linkClick = {graph: graph, link:link};});
 
 
 // https://stackoverflow.com/questions/9063383/how-to-invoke-click-event-programmaticaly-in-d3
@@ -166,6 +167,11 @@ function runTests() {
     $('#'+data1.nodes[1].groupId).d3Click();
     ok(firedEvents.nodeClick, 'should fire NODE_CLICK');
     equal(firedEvents.nodeClick.node, data1.nodes[1], 'should pass in clicked node');
+
+    firedEvents.linkClick = null;
+    $('#'+data1.links[0].lineId).d3Click();
+    ok(firedEvents.linkClick, 'should fire LINK_CLICK');
+    equal(firedEvents.linkClick.link, data1.links[0], 'should pass in clicked node');
   });
 
   test('styles', function(assert){
@@ -241,29 +247,66 @@ function runTests() {
     setTimeout(function(){
       var curPosition = graph2.zoomBehavior.translate();
       notEqual(prePosition, curPosition);
-      done();
+
+      prePosition = graph2.zoomBehavior.translate();
+      $('#'+data2.links[0].lineId).d3Click();
+      setTimeout(function(){
+        var curPosition = graph2.zoomBehavior.translate();
+        notEqual(prePosition, curPosition);
+        done();
+      }, 700); // wait until annimation is over
+
     }, 700); // wait until annimation is over
   });
 
   test('highlighting and relations', function(assert){
+    var relations = graph2.getNodeRelations(data2.nodes[1].id);
+    equal(relations.nodes.length, 1);
+    equal(relations.links.length, 1);
+    equal(relations.nodeIds.length, 1);
+    equal(relations.lineIds.length, 1);
+    equal(relations.nodes[0], data2.nodes[0]);
+
+    relations = graph2.getNodeRelations(data2.nodes[3].id);
+    ok(!relations, 'the 4th node does not have any relations');
+
     var done = assert.async();
-    $('#'+data2.nodes[1].groupId).d3Click();
+    $('#'+data1.nodes[3].groupId).d3Click();
     setTimeout(function(){
-      ok($('#'+data2.nodes[0].groupId).attr('class').indexOf('highlighted-node') !== -1);
-      ok($('#'+data2.nodes[1].groupId).attr('class').indexOf('highlighted-node center') !== -1);
-      ok($('#'+data2.nodes[2].groupId).attr('class').indexOf('highlighted-node') === -1);
+      ok($('#'+data1.nodes[0].groupId).attr('class').indexOf('highlighted-node') !== -1);
+      ok($('#'+data1.nodes[3].groupId).attr('class').indexOf('highlighted-node') !== -1);
+      ok($('#'+data1.nodes[3].groupId).attr('class').indexOf('center') !== -1);
+      ok($('#'+data1.nodes[1].groupId).attr('class').indexOf('highlighted-node') === -1);
+      ok($('#'+data1.nodes[2].groupId).attr('class').indexOf('highlighted-node') === -1);
 
-      var relations = graph2.getRelations(data2.nodes[1].id);
-      equal(relations.nodes.length, 1);
-      equal(relations.links.length, 1);
-      equal(relations.nodeIds.length, 1);
-      equal(relations.lineIds.length, 1);
-      equal(relations.nodes[0], data2.nodes[0]);
+      ok($('#'+data1.links[1].lineId).attr('class').indexOf('highlighted-line') !== -1);
+      ok($('#'+data1.links[0].lineId).attr('class').indexOf('highlighted-line') === -1);
 
-      relations = graph2.getRelations(data2.nodes[3].id);
-      ok(!relations, 'the 4th node does not have any relations');
+      $('#'+data1.nodes[0].groupId).d3Click();
+      setTimeout(function(){
+        ok($('#'+data1.nodes[0].groupId).attr('class').indexOf('highlighted-node') !== -1);
+        ok($('#'+data1.nodes[0].groupId).attr('class').indexOf('center') !== -1);
+        ok($('#'+data1.nodes[3].groupId).attr('class').indexOf('highlighted-node') !== -1);
+        ok($('#'+data1.nodes[1].groupId).attr('class').indexOf('highlighted-node') !== -1);
+        ok($('#'+data1.nodes[2].groupId).attr('class').indexOf('highlighted-node') === -1);
 
-      done();
+        ok($('#'+data1.links[1].lineId).attr('class').indexOf('highlighted-line') !== -1);
+        ok($('#'+data1.links[0].lineId).attr('class').indexOf('highlighted-line') !== -1);
+
+        $('#'+data1.links[0].lineId).d3Click();
+        setTimeout(function(){
+          ok($('#'+data1.links[0].lineId).attr('class').indexOf('highlighted-line') !== -1);
+          ok($('#'+data1.links[0].lineId).attr('class').indexOf('center') !== -1);
+          ok($('#'+data1.links[1].lineId).attr('class').indexOf('highlighted-line') === -1);
+
+          ok($('#'+data1.nodes[0].groupId).attr('class').indexOf('highlighted-node') !== -1);
+          ok($('#'+data1.nodes[1].groupId).attr('class').indexOf('highlighted-node') !== -1);
+          ok($('#'+data1.nodes[2].groupId).attr('class').indexOf('highlighted-node') === -1);
+          ok($('#'+data1.nodes[3].groupId).attr('class').indexOf('highlighted-node') === -1);
+
+          done();
+        }, 700);
+      }, 700);
     }, 700); // wait until annimation is over
   });
 

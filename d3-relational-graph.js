@@ -7,9 +7,14 @@
   var DEFAULT_OPTIONS = {
     highlightHoveringNode: true,
     highlightClickedNode: true,
+    highlightHoveringLink: true,
+    highlightClickedLink: true,
     highlightingDelays: 300,      // Highlight hovered node and its connected edges and nodes.
+
     centerClickedNode: true,
+    centerClickedLink: true,
     centeringDuration: 500,       // annimation duration for centering
+
     maxTitleLength: 20,           // title longer than the maximum length will be trimmed.
 
     zoomMinScale: 0.4,
@@ -49,13 +54,13 @@
 
   var DEFAULT_LINK_STYLES = {
     lineStroke: '#DDD',     // line (between circles) color
-    lineStrokeWidth: 1.5,   // line stroke width
+    lineStrokeWidth: 3,   // line stroke width
 
     lineHighlightedStroke: null,
-    lineHighlightedStrokeWidth: 2,
+    lineHighlightedStrokeWidth: 4,
 
     lineCenterStroke: null,
-    lineCenterStrokeWidth: 2,
+    lineCenterStrokeWidth: 4,
   };
 
   var EVENTS = {
@@ -65,6 +70,7 @@
     DREW: 'DREW',
     ZOOMED: 'ZOOMED',
     NODE_CLICK: 'NODE_CLICK',
+    LINK_CLICK: 'LINK_CLICK',
   };
 
   var instanceCounter = 0;
@@ -115,7 +121,7 @@
     });
 
     self.graphJson.links.forEach(function(link) {
-      link.lineId = 'graph-link-' + link.source.id + '-' + link.target.id;
+      link.lineId = 'graph-line-' + link.id;
     });
 
     self.zoomBehavior = d3.behavior.zoom()
@@ -194,7 +200,8 @@
             .attr('x2', function(d) { return d.target.x; })
             .attr('y2', function(d) { return d.target.y; })
             .attr('stroke', function(d){ return d.styles.lineStroke; })
-            .attr('stroke-width', function(d){ return d.styles.lineStrokeWidth; });
+            .attr('stroke-width', function(d){ return d.styles.lineStrokeWidth; })
+            .style('transition', 'all 0.2s ease-in-out');
 
       // Add containers for all circles and labels.
       self.positions = {
@@ -240,8 +247,8 @@
           .text(function(d) { return d.shortTitle; });
 
       self._bindResizeEvent();
-      self._bindNodeHighlightingEvents();
-      self._bindNodeClickingEvents();
+      self._bindItemHighlightingEvents();
+      self._bindItemClickingEvents();
       self._bindZoomAndDragEvents();
       self.zoom(self.options.zoomInitialScale);
 
@@ -249,15 +256,27 @@
     }
   };
 
-  // todo: rename to center either node or line
-  Graph.prototype.centerNode = function(nodeId){
+  // id is node or link id
+  Graph.prototype.centerItem = function(id){
     var self = this;
-    var node = this.getNode(nodeId);
+    var item = this.getItem(id);
     var scale = this.zoom();
-    var x = -node.px*scale + this.positions.svgWidth/2;
-    var y = -node.py*scale + this.positions.svgHeight/2;
     var nodesCenter = this._getNodesCenter(scale);
-    self._centeringNode = true;
+    var x, y;
+
+    if(item.isNode){
+      x = -item.px*scale + this.positions.svgWidth/2;
+      y = -item.py*scale + this.positions.svgHeight/2;
+    }else{
+      var source = item.source;
+      var target = item.target;
+      x = Math.min(source.px, target.px) + Math.abs(Math.abs(source.px) - Math.abs(target.px))/2;
+      y = Math.min(source.py, target.py) + Math.abs(Math.abs(source.py) - Math.abs(target.py))/2;
+      x = -x*scale + this.positions.svgWidth/2;
+      y = -y*scale + this.positions.svgHeight/2;
+    }
+
+    self._centeringItem = true;
     this.zoomBehavior.translate([x-nodesCenter.x, y-nodesCenter.y]);
     this.nodesContainer
         .transition()
@@ -265,11 +284,11 @@
         .attr('transform', 'translate('+x+','+y+')scale('+scale+')')
         .each('end', function(){
           self._trackZoomPosition();
-          self._centeringNode = false;
+          self._centeringItem = false;
         });
   };
 
-  Graph.prototype.getRelations = function(nodeId){
+  Graph.prototype.getNodeRelations = function(nodeId){
     nodeId = nodeId.toString();
     if(!this._relations){
       this._relations = {};
@@ -296,34 +315,33 @@
     return this._relations[nodeId];
   };
 
-  Graph.prototype.getNode = function(nodeId){
-    if(!this._idMapNodes){
-      this._idMapNodes = {};
+  // node or link id (node.id or link.id)
+  Graph.prototype.getItem = function(id){
+    if(!this._idMapData){
+      this._idMapData = {};
       for(var i = 0; i < this.graphJson.nodes.length; i++){
         var node = this.graphJson.nodes[i];
-        this._idMapNodes[node.id] = node;
+        this._idMapData[node.id] = node;
+      }
+      for(var j = 0; j < this.graphJson.links.length; j++){
+        var link = this.graphJson.links[j];
+        this._idMapData[link.id] = link;
       }
     }
-    return this._idMapNodes[nodeId];
+    return this._idMapData[id];
   };
 
-  // todo: rename to highlight either node or line
   Graph.prototype.highlightNode = function(nodeId, options){
+    nodeId = nodeId.toString();
+    if(!this.getItem(nodeId)) return false;
+
     options = merge({
       highlightRelated: true,
       keepHighlighting: false,
-      cancelPreviousHighlightedNode: true,
     }, options);
 
-    nodeId = nodeId.toString();
+    this._cancelCurrentHighlighting(nodeId);
     this._highlightedNode = {nodeId: nodeId, options: options};
-
-    if(options.cancelPreviousHighlightedNode){
-      var previousNode = this.svg.select('.highlighted-node.center').data()[0];
-      if(previousNode && previousNode.id !== nodeId){
-        this.unhighlightNodes();
-      }
-    }
 
     this._keepHighlighting = options.keepHighlighting;
     this.nodes.classed('masked', true);
@@ -336,7 +354,7 @@
         .classed('center', true);
 
     if(options.highlightRelated){
-      var connections = this.getRelations(nodeId);
+      var connections = this.getNodeRelations(nodeId);
       if(connections){
         var relatedNodeSelector = '#graph-group-' + connections.nodeIds.join(', #graph-group-');
         this.svg.selectAll(relatedNodeSelector)
@@ -353,8 +371,37 @@
     this._applyStyles(true, nodeId);
   };
 
-  // todo: rename
-  Graph.prototype.unhighlightNodes = function(){
+  Graph.prototype.highlightLink = function(linkId, options){
+    linkId = linkId.toString();
+    var link = this.getItem(linkId);
+    if(!link) return false;
+
+    options = merge({
+      keepHighlighting: false,
+    }, options);
+
+    this._cancelCurrentHighlighting(linkId);
+    this._highlightedLink = {linkId: linkId, options: options};
+
+    this._keepHighlighting = options.keepHighlighting;
+    this.nodes.classed('masked', true);
+    this.links.classed('masked', true);
+
+    var centerLineSelector = '#graph-line-' + linkId;
+    this.svg.select(centerLineSelector)
+        .classed('masked', false)
+        .classed('highlighted-line', true)
+        .classed('center', true);
+
+    this.svg.selectAll('#'+link.target.groupId+', #'+link.source.groupId)
+        .classed('masked', false)
+        .classed('highlighted-node', true)
+        .classed('center', true);
+
+    this._applyStyles(true, null, linkId);
+  };
+
+  Graph.prototype.unhighlightAll = function(){
     this._highlightedNode = null;
     this.svg.selectAll('.masked').attr('opacity', 1);
 
@@ -373,15 +420,28 @@
     this._keepHighlighting = false;
   };
 
-  Graph.prototype._applyStyles = function(isHighlighting, centerNodeId){
+  Graph.prototype._cancelCurrentHighlighting = function(idToBeHighlighted){
+    var previousLink = this.svg.select('.highlighted-line.center').data()[0];
+    if(previousLink && previousLink.id !== idToBeHighlighted){
+      this.unhighlightAll();
+      return;
+    }
+
+    var previousNode = this.svg.select('.highlighted-node.center').data()[0];
+    if(previousNode && previousNode.id !== idToBeHighlighted){
+      this.unhighlightAll();
+    }
+  };
+
+  Graph.prototype._applyStyles = function(isHighlighting, centerNodeId, centerLinkId){
     if(isHighlighting){
       this.svg.selectAll('.masked').attr('opacity', this.styles.maskedOpacity);
       this.svg.selectAll('.highlighted-node circle')
           .style('transform', function(d){
-            return scaleAttr(d.id === centerNodeId ? d.styles.circleCenterScale : d.styles.circleHighlightedScale);
+            return scaleAttr((centerLinkId || d.id === centerNodeId) ? d.styles.circleCenterScale : d.styles.circleHighlightedScale);
           })
           .style('-webkit-transform', function(d){ // fix safari
-            return scaleAttr(d.id === centerNodeId ? d.styles.circleCenterScale : d.styles.circleHighlightedScale);
+            return scaleAttr((centerLinkId || d.id === centerNodeId) ? d.styles.circleCenterScale : d.styles.circleHighlightedScale);
           })
           .attr('fill', function(d){
             return d.id === centerNodeId ? d.styles.circleCenterFill : d.styles.circleHighlightedFill;
@@ -395,10 +455,10 @@
 
       this.svg.selectAll('.highlighted-line')
           .attr('stroke', function(d){
-            return d.id === centerNodeId ? d.styles.lineCenterStroke : d.styles.lineHighlightedStroke;
+            return d.id === centerLinkId ? d.styles.lineCenterStroke : d.styles.lineHighlightedStroke;
           })
           .attr('stroke-width', function(d){
-            return d.id === centerNodeId ? d.styles.lineCenterStrokeWidth : d.styles.lineHighlightedStrokeWidth;
+            return d.id === centerLinkId ? d.styles.lineCenterStrokeWidth : d.styles.lineHighlightedStrokeWidth;
           });
 
     }else{
@@ -429,7 +489,7 @@
       node.shown = toShow;
       nodeIds.push(node.groupId);
 
-      var relations = this.getRelations(node.id);
+      var relations = this.getNodeRelations(node.id);
       if(relations){
         for(var j = 0; j < relations.links.length; j ++){
           var link = relations.links[j];
@@ -476,39 +536,56 @@
     return true;
   };
 
-  Graph.prototype._bindNodeHighlightingEvents = function(){
+  Graph.prototype._bindItemHighlightingEvents = function(){
     var self = this;
     var highlightTimeoutId;
-    this.nodes.on('mouseover', function(node) {
-      if(!self.options.highlightHoveringNode || self._keepHighlighting || self._isCenteringNode()) return;
+
+    this.nodes.on('mouseover', onMouseOver);
+    this.links.on('mouseover', onMouseOver);
+
+    this.nodes.on('mouseout', onMouseOut);
+    this.links.on('mouseout', onMouseOut);
+
+    function onMouseOver(item) {
+      var highlightHovered = item.isNode ? self.options.highlightHoveringNode : self.options.highlightHoveringLink;
+
+      if(!highlightHovered || self._keepHighlighting || self._isCenteringItem()) return;
 
       if(highlightTimeoutId){
         clearTimeout(highlightTimeoutId);
         highlightTimeoutId = null;
       }
       highlightTimeoutId = setTimeout(function(){
-        if(self._isCenteringNode()) return;
-        self.svg.selectAll('#'+node.textId).text(node.title);
-        self.highlightNode(node.id);
-      }, self.options.highlightingDelays);
-    });
+        if(self._isCenteringItem()) return;
 
-    this.nodes.on('mouseout', function(d) {
-      if(self._isCenteringNode()) return;
+        // Expand shorten title
+        if(item.isNode) self.svg.select('#'+item.textId).text(item.title);
+
+        if(item.isNode)
+          self.highlightNode(item.id);
+        else
+          self.highlightLink(item.id);
+      }, self.options.highlightingDelays);
+    }
+
+    function onMouseOut(item) {
+      if(self._isCenteringItem()) return;
 
       if(highlightTimeoutId){
         clearTimeout(highlightTimeoutId);
         highlightTimeoutId = null;
       }
 
-      if(!self.options.highlightHoveringNode || self._keepHighlighting) return;
+      var highlightHovered = item.isNode ? self.options.highlightHoveringNode : self.options.highlightHoveringLink;
+      if(!highlightHovered || self._keepHighlighting) return;
 
-      self.svg.select('#'+d.textId).text(d.shortTitle);
-      self.unhighlightNodes();
-    });
+      if(item.isNode) self.svg.select('#'+item.textId).text(item.shortTitle);
+
+      self.unhighlightAll();
+    }
   };
 
-  Graph.prototype._bindNodeClickingEvents = function(){
+  Graph.prototype._bindItemClickingEvents = function(){
     var self = this;
     this.nodes.on('mouseup', function(node) {
       if(self._isDragged()) return false;
@@ -517,9 +594,21 @@
         self.highlightNode(node.id, {keepHighlighting: true});
 
       if(self.options.centerClickedNode)
-        self.centerNode(node.id);
+        self.centerItem(node.id);
 
       self._fire(Graph.Events.NODE_CLICK, [node]);
+    });
+
+    this.links.on('mouseup', function(link) {
+      if(self._isDragged()) return false;
+
+      if(self.options.highlightClickedLink)
+        self.highlightLink(link.id, {keepHighlighting: true});
+
+      if(self.options.centerClickedLink)
+        self.centerItem(link.id);
+
+      self._fire(Graph.Events.LINK_CLICK, [link]);
     });
   };
 
@@ -546,7 +635,7 @@
     });
 
     self.background.on('mouseup', function(){
-      if(!self._isDragged()) self.unhighlightNodes();
+      if(!self._isDragged()) self.unhighlightAll();
     });
 
     function zoom(scale, dragPosition) {
@@ -579,8 +668,8 @@
            );
   };
 
-  Graph.prototype._isCenteringNode = function(){
-    return this._centeringNode;
+  Graph.prototype._isCenteringItem = function(){
+    return this._centeringItem;
   };
 
   Graph.prototype._trackZoomPosition = function(){
@@ -602,7 +691,7 @@
     function updatePositions(){
       self.positions.svgWidth = parseInt(self.svg.style('width'));
       self.positions.svgHeight = parseInt(self.svg.style('height'));
-      if(self._highlightedNode) self.centerNode(self._highlightedNode.nodeId);
+      if(self._highlightedNode) self.centerItem(self._highlightedNode.nodeId);
     }
   };
 
@@ -614,6 +703,7 @@
       var node = nodes[i];
       node.id = idPrefix+(node.id || i).toString();
       node.shown = true;
+      node.isNode = true;
       var styles = merge(DEFAULT_NODE_STYLES, data.styles);
       node.styles = merge(styles, node.styles);
       _inheritStyle(node.styles, {
@@ -629,6 +719,11 @@
     var links = data.links;
     for(var j = 0; j < links.length; j++){
       var link = links[j];
+
+      var sourceNode = nodes[link.source];
+      var targetNode = nodes[link.target];
+      link.id = idPrefix+(link.id || (sourceNode.id + '-' + targetNode.id));
+      link.isNode = false;
 
       var styles = merge(DEFAULT_LINK_STYLES, data.styles);
       link.styles = merge(styles, link.styles);
