@@ -21,6 +21,9 @@ var data1 = {
     circleCenterFill: 'yellow',
     circleCenterStroke: 'gray',
     circleCenterStrokeWidth: 1.5,
+
+    lineHighlightedStroke: 'blue',
+    lineCenterStroke: 'blue',
   },
   nodes: [{
     title: null,
@@ -36,13 +39,29 @@ var data1 = {
   }, {
     title: '3rd circle',
     id: 'has-id-2'
+  }, {
+    title: '4th circle',
+    id: 'has-id-3'
   }],
   links: [{
     source: 0,
     target: 1,
     styles: {
       lineStroke: 'black',
-      lineStrokeWidth: 4
+      lineStrokeWidth: 4,
+
+      lineHighlightedStroke: 'yellow',
+      lineHighlightedStrokeWidth: 6,
+
+      lineCenterStroke: 'yellow',
+      lineCenterStrokeWidth: 6,
+    }
+  },{
+    source: 0,
+    target: 3,
+    styles: {
+      lineHighlightedStrokeWidth: 5,
+      lineCenterStrokeWidth: 5,
     }
   }]
 };
@@ -63,8 +82,13 @@ var data2 = {
     type: 'c'
   }],
   links: [
-    {source: 0, target: 1 },
-    {source: 0, target: 2 }
+    {
+      source: 0,
+      target: 1
+    },{
+      source: 0,
+      target: 2
+    }
   ]
 };
 
@@ -145,19 +169,21 @@ function runTests() {
   });
 
   test('styles', function(assert){
+    $('#graph-1 .background').d3Click();
     equal($('#graph-1 .background').attr('fill'), 'gray', 'should use custom background color');
 
     var text = $('#'+data1.nodes[0].groupId+' text');
     equal(text.attr('font-size'), '15px');
 
-    var line = $('#'+data1.links[0].lineId);
-    equal(line.attr('stroke'), 'black');
-    equal(line.attr('stroke-width'), '4');
+    var line1 = $('#'+data1.links[0].lineId);
+    equal(line1.attr('stroke'), data1.links[0].styles.lineStroke, 'should apply custom line stroke style');
+    equal(line1.attr('stroke-width'), data1.links[0].styles.lineStrokeWidth, 'should apply custom line stroke-width style');
 
+    var line2 = $('#'+data1.links[1].lineId);
+    equal(line2.attr('stroke'), D3RGraph.DEFAULT_LINK_STYLES.lineStroke, 'should apply default line stroke style');
+    equal(line2.attr('stroke-width'), D3RGraph.DEFAULT_LINK_STYLES.lineStrokeWidth, 'should apply default line stroke-width style');
 
     $('#'+data1.nodes[0].groupId).d3Click();
-
-
     var done = assert.async();
     setTimeout(function(){
       var centerCircle = $('#'+data1.nodes[0].groupId+' circle');
@@ -178,6 +204,11 @@ function runTests() {
       equal(maskedCircle.attr('stroke'), D3RGraph.DEFAULT_NODE_STYLES.circleStroke);
       equal(maskedCircle.attr('stroke-width'), D3RGraph.DEFAULT_NODE_STYLES.circleStrokeWidth);
 
+      equal(line1.attr('stroke'), data1.links[0].styles.lineHighlightedStroke, 'should apply custom line stroke for highlighting');
+      equal(line1.attr('stroke-width'), data1.links[0].styles.lineHighlightedStrokeWidth, 'should apply custom line stroke-width for highlighting');
+      equal(line2.attr('stroke'), data1.styles.lineHighlightedStroke, 'should apply custom line stroke for highlighting from global');
+      equal(line2.attr('stroke-width'), data1.links[1].styles.lineHighlightedStrokeWidth, 'should apply custom line stroke-width for highlighting');
+
       $('#graph-1 .background').d3Click();
       setTimeout(function(){
         equal(centerCircle.attr('fill'), data1.nodes[0].styles.circleFill, 'should use node style');
@@ -193,6 +224,11 @@ function runTests() {
         equal(maskedCircle.attr('fill'), data1.styles.circleFill, 'should use global style');
         equal(maskedCircle.attr('stroke'), D3RGraph.DEFAULT_NODE_STYLES.circleStroke);
         equal(maskedCircle.attr('stroke-width'), D3RGraph.DEFAULT_NODE_STYLES.circleStrokeWidth);
+
+        equal(line1.attr('stroke'), data1.links[0].styles.lineStroke, 'should restore custom line stroke style after cancel highlighting');
+        equal(line1.attr('stroke-width'), data1.links[0].styles.lineStrokeWidth, 'should restore custom line stroke-width style after cancel highlighting');
+        equal(line2.attr('stroke'), D3RGraph.DEFAULT_LINK_STYLES.lineStroke, 'should restore default line stroke style after cancel highlighting');
+        equal(line2.attr('stroke-width'), D3RGraph.DEFAULT_LINK_STYLES.lineStrokeWidth, 'should restore default line stroke-width style after cancel highlighting');
         done();
       }, 700);
     }, 700); // wait until annimation is over

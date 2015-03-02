@@ -50,6 +50,12 @@
   var DEFAULT_LINK_STYLES = {
     lineStroke: '#DDD',     // line (between circles) color
     lineStrokeWidth: 1.5,   // line stroke width
+
+    lineHighlightedStroke: null,
+    lineHighlightedStrokeWidth: 2,
+
+    lineCenterStroke: null,
+    lineCenterStrokeWidth: 2,
   };
 
   var EVENTS = {
@@ -243,6 +249,7 @@
     }
   };
 
+  // todo: rename to center either node or line
   Graph.prototype.centerNode = function(nodeId){
     var self = this;
     var node = this.getNode(nodeId);
@@ -300,6 +307,7 @@
     return this._idMapNodes[nodeId];
   };
 
+  // todo: rename to highlight either node or line
   Graph.prototype.highlightNode = function(nodeId, options){
     options = merge({
       highlightRelated: true,
@@ -307,6 +315,7 @@
       cancelPreviousHighlightedNode: true,
     }, options);
 
+    nodeId = nodeId.toString();
     this._highlightedNode = {nodeId: nodeId, options: options};
 
     if(options.cancelPreviousHighlightedNode){
@@ -316,7 +325,6 @@
       }
     }
 
-    nodeId = nodeId.toString();
     this._keepHighlighting = options.keepHighlighting;
     this.nodes.classed('masked', true);
     this.links.classed('masked', true);
@@ -338,52 +346,73 @@
         var relatedLinkSelector = '#' + connections.lineIds.join(', #');
         this.svg.selectAll(relatedLinkSelector)
             .classed('masked', false)
-            .classed('highlighted-edge', true);
+            .classed('highlighted-line', true);
       }
     }
 
-    // Perform Annimation
-    this.svg.selectAll('.masked').attr('opacity', this.styles.maskedOpacity);
-    this.svg.selectAll('.highlighted-node circle')
-        .style('transform', function(d){
-          return scaleAttr(d.id === nodeId ? d.styles.circleCenterScale : d.styles.circleHighlightedScale);
-        })
-        .style('-webkit-transform', function(d){ // fix safari
-          return scaleAttr(d.id === nodeId ? d.styles.circleCenterScale : d.styles.circleHighlightedScale);
-        })
-        .attr('fill', function(d){
-          return d.id === nodeId ? d.styles.circleCenterFill : d.styles.circleHighlightedFill;
-        })
-        .attr('stroke', function(d){
-          return d.id === nodeId ? d.styles.circleCenterStroke : d.styles.circleHighlightedStroke;
-        })
-        .attr('stroke-width', function(d){
-          return d.id === nodeId ? d.styles.circleCenterStrokeWidth : d.styles.circleHighlightedStrokeWidth;
-        });
+    this._applyStyles(true, nodeId);
   };
 
+  // todo: rename
   Graph.prototype.unhighlightNodes = function(){
     this._highlightedNode = null;
     this.svg.selectAll('.masked').attr('opacity', 1);
 
-    this.svg.selectAll('.highlighted-node circle')
-        .style('transform', 'scale(1,1)')
-        .style('-webkit-transform', 'scale(1,1)') // safari
-        .attr('fill', function(d){return d.styles.circleFill;})
-        .attr('stroke', function(d){return d.styles.circleStroke;})
-        .attr('stroke-width', function(d){return d.styles.circleStrokeWidth;});
+    this._applyStyles(false);
 
     this.nodes
         .classed('masked', false)
         .classed('highlighted-node', false)
         .classed('center', false)
-        .classed('highlighted-edge', false);
+        .classed('highlighted-line', false);
 
     this.links
         .classed('masked', false)
-        .classed('highlighted-edge', false);
+        .classed('highlighted-line', false);
 
     this._keepHighlighting = false;
+  };
+
+  Graph.prototype._applyStyles = function(isHighlighting, centerNodeId){
+    if(isHighlighting){
+      this.svg.selectAll('.masked').attr('opacity', this.styles.maskedOpacity);
+      this.svg.selectAll('.highlighted-node circle')
+          .style('transform', function(d){
+            return scaleAttr(d.id === centerNodeId ? d.styles.circleCenterScale : d.styles.circleHighlightedScale);
+          })
+          .style('-webkit-transform', function(d){ // fix safari
+            return scaleAttr(d.id === centerNodeId ? d.styles.circleCenterScale : d.styles.circleHighlightedScale);
+          })
+          .attr('fill', function(d){
+            return d.id === centerNodeId ? d.styles.circleCenterFill : d.styles.circleHighlightedFill;
+          })
+          .attr('stroke', function(d){
+            return d.id === centerNodeId ? d.styles.circleCenterStroke : d.styles.circleHighlightedStroke;
+          })
+          .attr('stroke-width', function(d){
+            return d.id === centerNodeId ? d.styles.circleCenterStrokeWidth : d.styles.circleHighlightedStrokeWidth;
+          });
+
+      this.svg.selectAll('.highlighted-line')
+          .attr('stroke', function(d){
+            return d.id === centerNodeId ? d.styles.lineCenterStroke : d.styles.lineHighlightedStroke;
+          })
+          .attr('stroke-width', function(d){
+            return d.id === centerNodeId ? d.styles.lineCenterStrokeWidth : d.styles.lineHighlightedStrokeWidth;
+          });
+
+    }else{
+      this.svg.selectAll('.highlighted-node circle')
+          .style('transform', 'scale(1,1)')
+          .style('-webkit-transform', 'scale(1,1)') // safari
+          .attr('fill', function(d){return d.styles.circleFill;})
+          .attr('stroke', function(d){return d.styles.circleStroke;})
+          .attr('stroke-width', function(d){return d.styles.circleStrokeWidth;});
+
+      this.svg.selectAll('.highlighted-line')
+          .attr('stroke', function(d){return d.styles.lineStroke;})
+          .attr('stroke-width', function(d){return d.styles.lineStrokeWidth;});
+    }
   };
 
   Graph.prototype.toggleNodesByType = function(type){
@@ -587,18 +616,33 @@
       node.shown = true;
       var styles = merge(DEFAULT_NODE_STYLES, data.styles);
       node.styles = merge(styles, node.styles);
-      node.styles.circleHighlightedFill = node.styles.circleHighlightedFill || node.styles.circleFill;
-      node.styles.circleHighlightedStroke = node.styles.circleHighlightedStroke || node.styles.circleStroke;
-      node.styles.circleHighlightedStrokeWidth = node.styles.circleHighlightedStrokeWidth || node.styles.circleStrokeWidth;
-      node.styles.circleCenterFill = node.styles.circleCenterFill || node.styles.circleFill;
-      node.styles.circleCenterStroke = node.styles.circleCenterStroke || node.styles.circleStroke;
-      node.styles.circleCenterStrokeWidth = node.styles.circleCenterStrokeWidth || node.styles.circleStrokeWidth;
+      _inheritStyle(node.styles, {
+        'circleHighlightedFill': 'circleFill',
+        'circleHighlightedStroke': 'circleStroke',
+        'circleHighlightedStrokeWidth': 'circleStrokeWidth',
+        'circleCenterFill': 'circleFill',
+        'circleCenterStroke': 'circleStroke',
+        'circleCenterStrokeWidth': 'circleStrokeWidth',
+      });
     }
 
     var links = data.links;
     for(var j = 0; j < links.length; j++){
       var link = links[j];
-      link.styles = merge(DEFAULT_LINK_STYLES, link.styles);
+
+      var styles = merge(DEFAULT_LINK_STYLES, data.styles);
+      link.styles = merge(styles, link.styles);
+      _inheritStyle(link.styles, {
+        'lineHighlightedStroke': 'lineStroke',
+        'lineCenterStroke': 'lineStroke',
+      });
+    }
+  }
+
+  function _inheritStyle(styles, names){
+    for(var child in names){
+      var parent = names[child];
+      styles[child] = styles[child] || styles[parent];
     }
   }
 
