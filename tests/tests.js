@@ -109,8 +109,7 @@ graph1.on(D3RGraph.Events.LOADING, function(graph, progress){firedEvents.loading
 graph1.on(D3RGraph.Events.LOADED, function(graph){firedEvents.loaded = {graph: graph};});
 graph1.on(D3RGraph.Events.DREW, function(graph){firedEvents.drew = {graph: graph};});
 graph1.on(D3RGraph.Events.ZOOMED, function(graph){firedEvents.zoomed = {graph: graph};});
-graph1.on(D3RGraph.Events.NODE_CLICK, function(graph, node){firedEvents.nodeClick = {graph: graph, node:node};});
-graph1.on(D3RGraph.Events.LINK_CLICK, function(graph, link){firedEvents.linkClick = {graph: graph, link:link};});
+graph1.on(D3RGraph.Events.ITEM_CLICK, function(graph, item){firedEvents.itemClick = {graph: graph, item:item};});
 
 
 // https://stackoverflow.com/questions/9063383/how-to-invoke-click-event-programmaticaly-in-d3
@@ -163,15 +162,15 @@ function runTests() {
     graph1.zoom(0.6);
     ok(firedEvents.zoomed, 'should fire ZOOMED');
 
-    firedEvents.nodeClick = null;
+    firedEvents.itemClick = null;
     $('#'+data1.nodes[1].groupId).d3Click();
-    ok(firedEvents.nodeClick, 'should fire NODE_CLICK');
-    equal(firedEvents.nodeClick.node, data1.nodes[1], 'should pass in clicked node');
+    ok(firedEvents.itemClick, 'should fire ITEM_CLICK');
+    equal(firedEvents.itemClick.item, data1.nodes[1], 'should pass in clicked node');
 
-    firedEvents.linkClick = null;
+    firedEvents.itemClick = null;
     $('#'+data1.links[0].lineId).d3Click();
-    ok(firedEvents.linkClick, 'should fire LINK_CLICK');
-    equal(firedEvents.linkClick.link, data1.links[0], 'should pass in clicked node');
+    ok(firedEvents.itemClick, 'should fire ITEM_CLICK');
+    equal(firedEvents.itemClick.item, data1.links[0], 'should pass in clicked link');
   });
 
   test('styles', function(assert){

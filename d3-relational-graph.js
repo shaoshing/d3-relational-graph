@@ -69,8 +69,7 @@
     LOADED: 'LOADED',
     DREW: 'DREW',
     ZOOMED: 'ZOOMED',
-    NODE_CLICK: 'NODE_CLICK',
-    LINK_CLICK: 'LINK_CLICK',
+    ITEM_CLICK: 'ITEM_CLICK',
   };
 
   var instanceCounter = 0;
@@ -587,29 +586,29 @@
 
   Graph.prototype._bindItemClickingEvents = function(){
     var self = this;
-    this.nodes.on('mouseup', function(node) {
+
+    this.nodes.on('mouseup', onMouseUp);
+    this.links.on('mouseup', onMouseUp);
+
+    function onMouseUp(item) {
       if(self._isDragged()) return false;
 
-      if(self.options.highlightClickedNode)
-        self.highlightNode(node.id, {keepHighlighting: true});
+      if(item.isNode){
+        if(self.options.highlightClickedNode)
+          self.highlightNode(item.id, {keepHighlighting: true});
 
-      if(self.options.centerClickedNode)
-        self.centerItem(node.id);
+        if(self.options.centerClickedNode)
+          self.centerItem(item.id);
+      }else{
+        if(self.options.highlightClickedLink)
+          self.highlightLink(item.id, {keepHighlighting: true});
 
-      self._fire(Graph.Events.NODE_CLICK, [node]);
-    });
+        if(self.options.centerClickedLink)
+          self.centerItem(item.id);
+      }
 
-    this.links.on('mouseup', function(link) {
-      if(self._isDragged()) return false;
-
-      if(self.options.highlightClickedLink)
-        self.highlightLink(link.id, {keepHighlighting: true});
-
-      if(self.options.centerClickedLink)
-        self.centerItem(link.id);
-
-      self._fire(Graph.Events.LINK_CLICK, [link]);
-    });
+      self._fire(Graph.Events.ITEM_CLICK, [item]);
+    }
   };
 
   Graph.prototype._bindZoomAndDragEvents = function(){
