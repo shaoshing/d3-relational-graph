@@ -341,7 +341,7 @@
     }, options);
 
     this._cancelCurrentHighlighting(nodeId);
-    this._highlightedNode = {nodeId: nodeId, options: options};
+    this._highlightedItem = {id: nodeId, options: options};
 
     this._keepHighlighting = options.keepHighlighting;
     this.nodes.classed('masked', true);
@@ -381,7 +381,7 @@
     }, options);
 
     this._cancelCurrentHighlighting(linkId);
-    this._highlightedLink = {linkId: linkId, options: options};
+    this._highlightedItem = {id: linkId, options: options};
 
     this._keepHighlighting = options.keepHighlighting;
     this.nodes.classed('masked', true);
@@ -402,7 +402,7 @@
   };
 
   Graph.prototype.unhighlightAll = function(){
-    this._highlightedNode = null;
+    this._highlightedItem = null;
     this.svg.selectAll('.masked').attr('opacity', 1);
 
     this._applyStyles(false);
@@ -691,7 +691,7 @@
     function updatePositions(){
       self.positions.svgWidth = parseInt(self.svg.style('width'));
       self.positions.svgHeight = parseInt(self.svg.style('height'));
-      if(self._highlightedNode) self.centerItem(self._highlightedNode.nodeId);
+      if(self._highlightedItem) self.centerItem(self._highlightedItem.id);
     }
   };
 
