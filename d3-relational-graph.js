@@ -76,6 +76,7 @@
   function Graph(svgSelector, data, options){
     this.svgSelector = svgSelector;
     this.id = 'g'+(instanceCounter++);
+    validateData(data);
     assignDefaultValues(data, this.id+'-');
     this.data = data;
     this.styles = data.styles;
@@ -696,6 +697,7 @@
 
   function assignDefaultValues(data, idPrefix){
     data.styles = merge(DEFAULT_GLOBAL_STYLES, data.styles);
+    data.links = data.links || [];
 
     var nodes = data.nodes;
     for(var i = 0; i < nodes.length; i++){
@@ -755,5 +757,33 @@
 
   function scaleAttr(scale) {
     return 'scale('+scale+','+scale+')';
+  }
+
+  function validateData(data) {
+    if(!data.nodes || data.nodes.length === 0) throw 'D3RGraph: Node length must not be zero.';
+
+    var ids = {};
+    for(var i = 0; i < data.nodes.length; i++){
+      var node = data.nodes[i];
+      if(!node.id) continue;
+      ids[node.id] = ids[node.id] || [];
+      ids[node.id].push(i);
+    }
+    for(var id in ids){
+      var nodeIndexes = ids[id];
+      if(nodeIndexes.length > 1){
+        throw 'D3RGraph: Found duplicate node id: '+id+'. Id exists in nodes: '+nodeIndexes.join(', ');
+      }
+    }
+
+    if(data.links){
+      for(var j = 0; j < data.links.length; j++){
+        var link = data.links[j];
+        if(link.source < 0 || link.source >= data.nodes.length ||
+           link.target < 0 || link.target >= data.nodes.length ||
+           link.source === link.target)
+          throw 'D3RGraph: Link (source: '+link.source+', target: '+link.target+') does not exist.';
+      }
+    }
   }
 })();

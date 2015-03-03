@@ -340,6 +340,44 @@ function runTests() {
     equal($('#'+data2.links[0].lineId).css('display'), 'none');
   });
 
+  test('validations', function(assert){
+    assert.throws(function(){
+      new D3RGraph('#', {
+        nodes: []
+      });
+    },
+    'D3RGraph: Node length must not be zero.',
+    'Empty node');
+
+    assert.throws(function(){
+      new D3RGraph('#', {
+        nodes: [
+          {id: 1 },
+          {id: 1 },
+          {id: 2 },
+          {id: 1 },
+        ]
+      });
+    },
+    'D3RGraph: Found duplicate node id: 1. Id exists in nodes: 0, 1, 3',
+    'Duplicate id');
+
+    assert.throws(function(){
+      new D3RGraph('#', {
+        nodes: [
+          {},
+          {},
+          {}
+        ],
+        links: [
+          {source: 0, target: 5}
+        ]
+      });
+    },
+    'D3RGraph: Link (source: 0, target: 5) does not exist.',
+    'Invalid Link');
+  });
+
 }
 
 graph1.draw();
