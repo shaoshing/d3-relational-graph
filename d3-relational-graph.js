@@ -73,12 +73,12 @@
   };
 
   var instanceCounter = 0;
-  function Graph(svgSelector, graphJson, options){
+  function Graph(svgSelector, data, options){
     this.svgSelector = svgSelector;
     this.id = 'g'+(instanceCounter++);
-    assignDefaultValues(graphJson, this.id+'-');
-    this.graphJson = graphJson;
-    this.styles = graphJson.styles;
+    assignDefaultValues(data, this.id+'-');
+    this.data = data;
+    this.styles = data.styles;
     this.options = merge(DEFAULT_OPTIONS, options);
   }
   window.D3RGraph = Graph;
@@ -101,11 +101,11 @@
         .charge(-2500)
         .chargeDistance(1000)
         .size([20000, 20000])  // make layout large enough to hold all nodes.
-        .nodes(self.graphJson.nodes)
-        .links(self.graphJson.links)
+        .nodes(self.data.nodes)
+        .links(self.data.links)
         .start();
 
-    self.graphJson.nodes.forEach(function(node) {
+    self.data.nodes.forEach(function(node) {
       node.title = node.title || self.options.nodeDefaultTitle;
       if(node.title.length > self.options.maxTitleLength)
         node.shortTitle = node.title.substr(0, self.options.maxTitleLength/2) + '...' +
@@ -119,7 +119,7 @@
       node.typeClass = 'graph-type-' + (node.type || 'none');
     });
 
-    self.graphJson.links.forEach(function(link) {
+    self.data.links.forEach(function(link) {
       link.lineId = 'graph-line-' + link.id;
     });
 
@@ -128,7 +128,7 @@
 
     self._fire(Graph.Events.BEFORE_LOAD);
 
-    var nodesLength = self.graphJson.nodes.length;
+    var nodesLength = self.data.nodes.length;
     var tickCount = self.options.tickCount || Math.max(nodesLength*nodesLength/50, 2500);
 
     if(self.options.progressiveLoading){
@@ -189,7 +189,7 @@
 
       // Add lines
       self.links = self.nodesContainer.selectAll('.link')
-          .data(self.graphJson.links)
+          .data(self.data.links)
           .enter()
             .append('line')
             .attr('class', 'graph-link')
@@ -210,7 +210,7 @@
         minNodeY: null
       };
       self.nodes = self.nodesContainer.selectAll('.node')
-          .data(self.graphJson.nodes)
+          .data(self.data.nodes)
           .enter()
             .append('g')
             .attr('title', function(d){ return d.title; })
@@ -292,7 +292,7 @@
     if(!this._relations){
       this._relations = {};
       var self = this;
-      this.graphJson.links.forEach(function(link) {
+      this.data.links.forEach(function(link) {
         addConnection(link.source, link.target, link);
         addConnection(link.target, link.source, link);
 
@@ -318,12 +318,12 @@
   Graph.prototype.getItem = function(id){
     if(!this._idMapData){
       this._idMapData = {};
-      for(var i = 0; i < this.graphJson.nodes.length; i++){
-        var node = this.graphJson.nodes[i];
+      for(var i = 0; i < this.data.nodes.length; i++){
+        var node = this.data.nodes[i];
         this._idMapData[node.id] = node;
       }
-      for(var j = 0; j < this.graphJson.links.length; j++){
-        var link = this.graphJson.links[j];
+      for(var j = 0; j < this.data.links.length; j++){
+        var link = this.data.links[j];
         this._idMapData[link.id] = link;
       }
     }
