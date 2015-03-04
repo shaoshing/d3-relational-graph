@@ -238,19 +238,17 @@
           .attr('stroke-width', function(d){ return d.styles.circleStrokeWidth; })
           .style('transition', 'all 0.2s ease-in-out');
 
-      // Add labels
-      self.labels = self.nodes.append('text')
-          .attr('dx', function(d){ return d.styles.circleR*1.5+3; })
-          .attr('dy', function(d){ return (d.styles.labelFontSize-2)/2; })
+
+      self.texts = self.nodes.append('text')
           .attr('id', function(d){ return d.textId; })
           .attr('font-size', function(d){ return d.styles.labelFontSize + 'px'; })
           .text(function(d) { return d.shortTitle; });
+      self._adjustLabelPositions();
 
       self._bindResizeEvent();
       self._bindItemHighlightingEvents();
       self._bindItemClickingEvents();
       self._bindZoomAndDragEvents();
-      self.zoom(self.options.zoomInitialScale);
 
       self._fire(Graph.Events.DREW);
     }
@@ -681,6 +679,137 @@
     var x = nodesCenter.x + dragPosition[0];
     var y = nodesCenter.y + dragPosition[1];
     return [x, y];
+  };
+
+  Graph.prototype._adjustLabelPositions = function(){
+    var self = this;
+    var nodesX = {};
+    var nodesY = {};
+    var PORTION = 20;
+    var NEARBY_RADIUS = 200;
+
+    // Index nodes by their x and y to improve performance
+    for(var i = 0; i < this.data.nodes.length; i++){
+      var node = this.data.nodes[i];
+
+      var xIndex = Math.floor(node.px/PORTION);
+      nodesX[xIndex] = nodesX[xIndex] || [];
+      nodesX[xIndex].push(node);
+
+      var yIndex = Math.floor(node.py/PORTION);
+      nodesY[yIndex] = nodesY[yIndex] || [];
+      nodesY[yIndex].push(node);
+
+      node.xIndex = xIndex;
+      node.yIndex = yIndex;
+    }
+
+    // Find each node's nearby nodes
+    for(var i = 0; i < this.data.nodes.length; i++){
+      var node = this.data.nodes[i];
+
+      var xIndexStart = node.xIndex - Math.ceil(NEARBY_RADIUS/PORTION);
+      var xIndexEnd = node.xIndex + Math.ceil(NEARBY_RADIUS/PORTION);
+
+      var yIndexStart = node.yIndex - Math.ceil(NEARBY_RADIUS/PORTION);
+      var yIndexEnd = node.yIndex + Math.ceil(NEARBY_RADIUS/PORTION);
+
+      var nodesNearX = [];
+      for(var x = xIndexStart; x <= xIndexEnd; x++){
+        nodesNearX = nodesNearX.concat(nodesX[x] || []);
+      }
+
+      var nodesNearY = [];
+      for(var y = yIndexStart; y <= yIndexEnd; y++){
+        nodesNearY = nodesNearY.concat(nodesY[y] || []);
+      }
+
+      var nearbyNodes = nodesNearX.filter(function(xNode){ return nodesNearY.indexOf(xNode) !== -1; });
+      node.nearbyNodes = [];
+      for(var j = 0; j < nearbyNodes.length; j++){
+        var nNode = nearbyNodes[j];
+        var distance = Math.sqrt(Math.pow(Math.abs(node.px - nNode.px), 2) + Math.pow(Math.abs(node.py - nNode.py), 2));
+        if(distance <= NEARBY_RADIUS && nNode !== node) node.nearbyNodes.push(nNode);
+      }
+
+      // Debugging
+      // console.log(xIndexStart, xIndexEnd, yIndexStart, yIndexEnd);
+      // console.log('node', node.groupId, 'has', node.nearbyNodes.length, 'nodes nearby', node.nearbyNodes);
+      // console.log({
+      //   nodesNearY: nodesNearY,
+      //   nodesNearX: nodesNearX,
+      //   nearbyNodes: nearbyNodes
+      // });
+    }
+
+    // Assign initial text position
+    for(var i = 0; i < this.data.nodes.length; i++){
+      var node = this.data.nodes[i];
+      var text = d3.select('#'+node.textId);
+      node.text = {
+        t: 0,
+        r: parseInt(node.styles.circleR),
+        width: parseInt(text.style('width')),
+        height: parseInt(text.style('height')),
+      };
+      updatePosition(node);
+    }
+
+    // Adjust text position if it is overlapping with any nearby nodes
+    var ROTATE_45_DEGREE = Math.PI/4
+    for(var i = 0; i < this.data.nodes.length; i++){
+      var intersected = true;
+      var node = this.data.nodes[i];
+      while(intersected && node.text.t !== Math.PI*2){
+        intersected = false;
+        for(var j = 0; j < node.nearbyNodes.length; j++){
+          var nNode = node.nearbyNodes[j];
+          if(isIntersect(node, nNode)){
+            intersected = true;
+            break;
+          }
+        }
+        if(intersected){
+          node.text.t += ROTATE_45_DEGREE;
+          updatePosition(node);
+        }
+      }
+    }
+
+    function updatePosition(node) {
+      var padding = 15;
+      var r = node.text.r + 5;
+      var t = node.text.t;
+      var x = r*Math.cos(t);
+      var y = r*Math.sin(t);
+      node.text.x = x > 0 ? x : x-node.text.width;
+      node.text.y = y + node.text.height/2*((y+r)/(2*r));
+
+      self.svg.select('#'+node.textId)
+        .attr('dx', function(d){ return d.text.x; })
+        .attr('dy', function(d){ return d.text.y; });
+
+      var box = self.svg.select('#'+node.groupId).node().getBBox();
+      node.nodeBox = {};
+      node.nodeBox.x1 = node.px - padding;
+      node.nodeBox.y1 = node.py - padding;
+      node.nodeBox.x2 = node.nodeBox.x1 + box.width + padding;
+      node.nodeBox.y2 = node.nodeBox.y1 + box.height + padding;
+
+      node.textBox = {};
+      node.textBox.x1 = node.px + node.text.x + node.styles.circleR - padding;
+      node.textBox.y1 = node.py + node.text.y + node.styles.circleR - padding;
+      node.textBox.x2 = node.textBox.x1 + node.text.width + padding;
+      node.textBox.y2 = node.textBox.y1 + node.text.height + padding;
+    }
+
+    function isIntersect(node, nNode) {
+      var textAboveNode = node.textBox.y2 < nNode.nodeBox.y1;
+      var textBelowNode = node.textBox.y1 > nNode.nodeBox.y2;
+      var textLeftOfNode = node.textBox.x2 < nNode.nodeBox.x1;
+      var textRightOfNode = node.textBox.x1 > nNode.nodeBox.x2;
+      return !(textAboveNode || textBelowNode || textLeftOfNode || textRightOfNode);
+    }
   };
 
   Graph.prototype._bindResizeEvent = function(){
