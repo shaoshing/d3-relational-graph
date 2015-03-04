@@ -99,8 +99,10 @@
     self.svg = d3.select(self.svgSelector);
     self.force = d3.layout.force()
         .linkDistance(150)
-        .charge(-2500)
         .chargeDistance(1000)
+        .charge(-4000)
+        .gravity(0.2 - self.data.nodes.length/60*0.014)
+        .friction(0.5)
         .size([20000, 20000])  // make layout large enough to hold all nodes.
         .nodes(self.data.nodes)
         .links(self.data.links)
