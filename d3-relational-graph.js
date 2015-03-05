@@ -19,7 +19,7 @@
 
     zoomMinScale: 0.4,
     zoomMaxScale: 1,
-    zoomInitialScale: 1,
+    zoomInitialScale: null,
 
     nodeDefaultTitle: 'untitled',
 
@@ -251,7 +251,7 @@
       self._bindItemHighlightingEvents();
       self._bindItemClickingEvents();
       self._bindZoomAndDragEvents();
-
+      if(self.options.zoomInitialScale) self.zoom(self.options.zoomInitialScale);
       self._fire(Graph.Events.DREW);
     }
   };
@@ -616,7 +616,7 @@
     var self = this;
 
     self.zoomBehavior
-        .scale([self.options.zoomInitialScale])
+        .scale([self.options.zoomInitialScale || self.options.zoomMaxScale])
         .size([self.positions.nodesWidth, self.positions.nodesHeight])
         .on('zoom', function(){
           zoom(d3.event.scale, d3.event.translate);
