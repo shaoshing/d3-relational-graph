@@ -240,7 +240,6 @@
           .attr('stroke-width', function(d){ return d.styles.circleStrokeWidth; })
           .style('transition', 'all 0.2s ease-in-out');
 
-
       self.texts = self.nodes.append('text')
           .attr('id', function(d){ return d.textId; })
           .attr('font-size', function(d){ return d.styles.labelFontSize + 'px'; })
@@ -434,36 +433,52 @@
   };
 
   Graph.prototype._applyStyles = function(isHighlighting, centerNodeId, centerLinkId){
+    var self = this;
     if(isHighlighting){
       this.svg.selectAll('.masked').attr('opacity', this.styles.maskedOpacity);
       this.svg.selectAll('.highlighted-node circle')
           .style('transform', function(d){
-            return scaleAttr((centerLinkId || d.id === centerNodeId) ? d.styles.circleCenterScale : d.styles.circleHighlightedScale);
+            var scale = (centerLinkId || d.id === centerNodeId) ?
+                d.styles.circleCenterScale : d.styles.circleHighlightedScale;
+            d.text.r = scale*d.styles.circleR;
+            self._updateTextPosition(d, true);
+
+            return scaleAttr(scale);
           })
           .style('-webkit-transform', function(d){ // fix safari
-            return scaleAttr((centerLinkId || d.id === centerNodeId) ? d.styles.circleCenterScale : d.styles.circleHighlightedScale);
+            return scaleAttr((centerLinkId || d.id === centerNodeId) ?
+                d.styles.circleCenterScale : d.styles.circleHighlightedScale);
           })
           .attr('fill', function(d){
-            return d.id === centerNodeId ? d.styles.circleCenterFill : d.styles.circleHighlightedFill;
+            return d.id === centerNodeId ?
+                d.styles.circleCenterFill : d.styles.circleHighlightedFill;
           })
           .attr('stroke', function(d){
-            return d.id === centerNodeId ? d.styles.circleCenterStroke : d.styles.circleHighlightedStroke;
+            return d.id === centerNodeId ?
+                d.styles.circleCenterStroke : d.styles.circleHighlightedStroke;
           })
           .attr('stroke-width', function(d){
-            return d.id === centerNodeId ? d.styles.circleCenterStrokeWidth : d.styles.circleHighlightedStrokeWidth;
+            return d.id === centerNodeId ?
+                d.styles.circleCenterStrokeWidth : d.styles.circleHighlightedStrokeWidth;
           });
 
       this.svg.selectAll('.highlighted-line')
           .attr('stroke', function(d){
-            return d.id === centerLinkId ? d.styles.lineCenterStroke : d.styles.lineHighlightedStroke;
+            return d.id === centerLinkId ?
+                d.styles.lineCenterStroke : d.styles.lineHighlightedStroke;
           })
           .attr('stroke-width', function(d){
-            return d.id === centerLinkId ? d.styles.lineCenterStrokeWidth : d.styles.lineHighlightedStrokeWidth;
+            return d.id === centerLinkId ?
+                d.styles.lineCenterStrokeWidth : d.styles.lineHighlightedStrokeWidth;
           });
 
     }else{
       this.svg.selectAll('.highlighted-node circle')
-          .style('transform', 'scale(1,1)')
+          .style('transform', function(d){
+            d.text.r = d.styles.circleR;
+            self._updateTextPosition(d, true);
+            return 'scale(1,1)';
+          })
           .style('-webkit-transform', 'scale(1,1)') // safari
           .attr('fill', function(d){return d.styles.circleFill;})
           .attr('stroke', function(d){return d.styles.circleStroke;})
@@ -753,7 +768,7 @@
         width: parseInt(text.style('width')),
         height: parseInt(text.style('height')),
       };
-      updatePosition(node);
+      self._updateTextPosition(node);
     }
 
     // Adjust text position if it is overlapping with any nearby nodes
@@ -777,35 +792,9 @@
             // console.log('end of rotation', node.title, node.id);
             break;
           }
-          updatePosition(node);
+          self._updateTextPosition(node);
         }
       }
-    }
-
-    function updatePosition(node) {
-      var padding = 5;
-      var r = node.text.r + 5;
-      var t = node.text.t;
-      var x = r*Math.cos(t);
-      var y = r*Math.sin(t);
-      node.text.x = x > 0 ? x : x-node.text.width;
-      node.text.y = y + node.text.height/2*((y+r)/(2*r));
-
-      self.svg.select('#'+node.textId)
-        .attr('dx', function(d){ return d.text.x; })
-        .attr('dy', function(d){ return d.text.y; });
-
-      node.rectCircle = {};
-      node.rectCircle.x1 = node.px - padding;
-      node.rectCircle.y1 = node.py - padding;
-      node.rectCircle.x2 = node.rectCircle.x1 + node.styles.circleR*2 + padding;
-      node.rectCircle.y2 = node.rectCircle.y1 + node.styles.circleR*2 + padding;
-
-      node.rectText = {};
-      node.rectText.x1 = node.px + node.text.x + node.styles.circleR - padding;
-      node.rectText.y1 = node.py + node.text.y + node.styles.circleR - node.text.height - padding;
-      node.rectText.x2 = node.rectText.x1 + node.text.width + padding;
-      node.rectText.y2 = node.rectText.y1 + node.text.height + padding;
     }
 
     function isIntersect(node, nNode) {
@@ -833,6 +822,43 @@
       if(self._highlightedItem) self.centerItem(self._highlightedItem.id);
     }
   };
+
+  Graph.prototype._updateTextPosition = function(node, doTransition) {
+    doTransition = doTransition || false;
+
+    var padding = 5;
+    var r = node.text.r + 5;
+    var t = node.text.t;
+    var x = r*Math.cos(t);
+    var y = r*Math.sin(t);
+
+    var newTextX = x > 0 ? x : x-node.text.width;
+    var newTextY = y + node.text.height/2*((y+r)/(2*r));
+    if(newTextX === node.text.x && newTextY === node.text.y){
+      return;
+    }
+
+    node.text.x = newTextX;
+    node.text.y = newTextY;
+
+    this.svg.select('#'+node.textId)
+      .transition()
+      .duration(doTransition ? 200 : 0)
+      .attr('dx', function(d){ return d.text.x; })
+      .attr('dy', function(d){ return d.text.y; });
+
+    node.rectCircle = {};
+    node.rectCircle.x1 = node.px - padding;
+    node.rectCircle.y1 = node.py - padding;
+    node.rectCircle.x2 = node.rectCircle.x1 + node.styles.circleR*2 + padding;
+    node.rectCircle.y2 = node.rectCircle.y1 + node.styles.circleR*2 + padding;
+
+    node.rectText = {};
+    node.rectText.x1 = node.px + node.text.x + node.styles.circleR - padding;
+    node.rectText.y1 = node.py + node.text.y + node.styles.circleR - node.text.height - padding;
+    node.rectText.x2 = node.rectText.x1 + node.text.width + padding;
+    node.rectText.y2 = node.rectText.y1 + node.text.height + padding;
+  }
 
   function assignDefaultValues(data, idPrefix){
     data.styles = merge(DEFAULT_GLOBAL_STYLES, data.styles);
