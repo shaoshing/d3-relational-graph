@@ -616,7 +616,6 @@
     var self = this;
 
     self.zoomBehavior
-        .scale([self.options.zoomInitialScale || self.options.zoomMaxScale])
         .size([self.positions.nodesWidth, self.positions.nodesHeight])
         .on('zoom', function(){
           zoom(d3.event.scale, d3.event.translate);
@@ -758,11 +757,11 @@
     }
 
     // Adjust text position if it is overlapping with any nearby nodes
-    var ROTATE_45_DEGREE = Math.PI/4
+    var ROTATE_30_DEGREE = Math.PI/6;
     for(var i = 0; i < this.data.nodes.length; i++){
       var intersected = true;
       var node = this.data.nodes[i];
-      while(intersected && node.text.t !== Math.PI*2){
+      while(intersected){
         intersected = false;
         for(var j = 0; j < node.nearbyNodes.length; j++){
           var nNode = node.nearbyNodes[j];
@@ -772,14 +771,19 @@
           }
         }
         if(intersected){
-          node.text.t += ROTATE_45_DEGREE;
+          node.text.t += ROTATE_30_DEGREE;
+
+          if(node.text.t >= Math.PI*2){
+            // console.log('end of rotation', node.title, node.id);
+            break;
+          }
           updatePosition(node);
         }
       }
     }
 
     function updatePosition(node) {
-      var padding = 15;
+      var padding = 5;
       var r = node.text.r + 5;
       var t = node.text.t;
       var x = r*Math.cos(t);
@@ -791,26 +795,30 @@
         .attr('dx', function(d){ return d.text.x; })
         .attr('dy', function(d){ return d.text.y; });
 
-      var box = self.svg.select('#'+node.groupId).node().getBBox();
-      node.nodeBox = {};
-      node.nodeBox.x1 = node.px - padding;
-      node.nodeBox.y1 = node.py - padding;
-      node.nodeBox.x2 = node.nodeBox.x1 + box.width + padding;
-      node.nodeBox.y2 = node.nodeBox.y1 + box.height + padding;
+      node.rectCircle = {};
+      node.rectCircle.x1 = node.px - padding;
+      node.rectCircle.y1 = node.py - padding;
+      node.rectCircle.x2 = node.rectCircle.x1 + node.styles.circleR*2 + padding;
+      node.rectCircle.y2 = node.rectCircle.y1 + node.styles.circleR*2 + padding;
 
-      node.textBox = {};
-      node.textBox.x1 = node.px + node.text.x + node.styles.circleR - padding;
-      node.textBox.y1 = node.py + node.text.y + node.styles.circleR - padding;
-      node.textBox.x2 = node.textBox.x1 + node.text.width + padding;
-      node.textBox.y2 = node.textBox.y1 + node.text.height + padding;
+      node.rectText = {};
+      node.rectText.x1 = node.px + node.text.x + node.styles.circleR - padding;
+      node.rectText.y1 = node.py + node.text.y + node.styles.circleR - node.text.height - padding;
+      node.rectText.x2 = node.rectText.x1 + node.text.width + padding;
+      node.rectText.y2 = node.rectText.y1 + node.text.height + padding;
     }
 
     function isIntersect(node, nNode) {
-      var textAboveNode = node.textBox.y2 < nNode.nodeBox.y1;
-      var textBelowNode = node.textBox.y1 > nNode.nodeBox.y2;
-      var textLeftOfNode = node.textBox.x2 < nNode.nodeBox.x1;
-      var textRightOfNode = node.textBox.x1 > nNode.nodeBox.x2;
-      return !(textAboveNode || textBelowNode || textLeftOfNode || textRightOfNode);
+      return areRectsIntersect(node.rectText, nNode.rectText) ||
+             areRectsIntersect(node.rectText, nNode.rectCircle);
+
+      function areRectsIntersect(a, b) {
+        var aAboveB = a.y2 < b.y1;
+        var aBelowB = a.y1 > b.y2;
+        var aLeftOfB = a.x2 < b.x1;
+        var aRightOfB = a.x1 > b.x2;
+        return !(aAboveB || aBelowB || aLeftOfB || aRightOfB);
+      }
     }
   };
 
@@ -881,7 +889,7 @@
       result[key] = to[key];
     }
     for(key in from){
-      result[key] = from[key];
+      if(from[key]) result[key] = from[key];
     }
     return result;
   }
