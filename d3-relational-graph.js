@@ -55,6 +55,7 @@
   var DEFAULT_LINK_STYLES = {
     lineStroke: '#DDD',     // line (between circles) color
     lineStrokeWidth: 3,   // line stroke width
+    lineStrokeDasharray: null,
 
     lineHighlightedStroke: null,
     lineHighlightedStrokeWidth: 4,
@@ -203,6 +204,7 @@
             .attr('y2', function(d) { return d.target.y; })
             .attr('stroke', function(d){ return d.styles.lineStroke; })
             .attr('stroke-width', function(d){ return d.styles.lineStrokeWidth; })
+            .attr('stroke-dasharray', function(d){ return d.styles.lineStrokeDasharray; })
             .style('transition', 'all 0.2s ease-in-out');
 
       // Add containers for all circles and labels.
@@ -888,7 +890,7 @@
 
       var sourceNode = nodes[link.source];
       var targetNode = nodes[link.target];
-      link.id = idPrefix+(link.id || (sourceNode.id + '-' + targetNode.id));
+      link.id = idPrefix+(link.id || (sourceNode.id + '-' + targetNode.id + '-' + (link.type || 'default')));
       link.isNode = false;
 
       var styles = merge(DEFAULT_LINK_STYLES, data.styles);
@@ -942,12 +944,20 @@
     }
 
     if(data.links){
+      var links = {};
       for(var j = 0; j < data.links.length; j++){
         var link = data.links[j];
         if(link.source < 0 || link.source >= data.nodes.length ||
            link.target < 0 || link.target >= data.nodes.length ||
            link.source === link.target)
           throw 'D3RGraph: Link (source: '+link.source+', target: '+link.target+') does not exist.';
+
+        var linkId = link.source + '-' + link.target + '-' + link.type;
+        links[linkId] = links[linkId] || [];
+        links[linkId].push(link);
+        if(links[linkId].length > 1){
+          throw 'D3RGraph: Fond duplicate link (source: '+link.source+', target: '+link.target+').';
+        }
       }
     }
   }

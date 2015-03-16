@@ -87,6 +87,16 @@ var data2 = {
       target: 1
     },{
       source: 0,
+      target: 2,
+      type: 'link2',
+      styles: {
+        lineStrokeWidth: 5,
+        lineStrokeDasharray: '5,5',
+        lineStroke: 'red',
+        lineCenterStroke: '#ddd',
+      }
+    },{
+      source: 0,
       target: 2
     }
   ]
@@ -370,12 +380,28 @@ function runTests() {
           {}
         ],
         links: [
-          {source: 0, target: 5}
+          {source: 0, target: 5},
         ]
       });
     },
     'D3RGraph: Link (source: 0, target: 5) does not exist.',
     'Invalid Link');
+
+    assert.throws(function(){
+      new D3RGraph('#', {
+        nodes: [
+          {},
+          {},
+          {}
+        ],
+        links: [
+          {source: 0, target: 1},
+          {source: 0, target: 1},
+        ]
+      });
+    },
+    'D3RGraph: Fond duplicate link (source: 0, target: 1).',
+    'Duplicate Link');
   });
 
 }
