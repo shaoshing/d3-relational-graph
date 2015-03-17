@@ -73,6 +73,8 @@
     ITEM_CLICK: 'ITEM_CLICK',
   };
 
+  var browser = getBrowserInfo();
+
   var instanceCounter = 0;
   function Graph(svgSelector, data, options){
     this.svgSelector = svgSelector;
@@ -89,6 +91,7 @@
   Graph.DEFAULT_LINK_STYLES = DEFAULT_LINK_STYLES;
   Graph.DEFAULT_NODE_STYLES = DEFAULT_NODE_STYLES;
   Graph.DEFAULT_GLOBAL_STYLES = DEFAULT_GLOBAL_STYLES;
+  Graph.browser = browser;
 
   Graph.prototype.draw = function(){
     var self = this;
@@ -439,18 +442,6 @@
     if(isHighlighting){
       this.svg.selectAll('.masked').attr('opacity', this.styles.maskedOpacity);
       this.svg.selectAll('.highlighted-node circle')
-          .style('transform', function(d){
-            var scale = (centerLinkId || d.id === centerNodeId) ?
-                d.styles.circleCenterScale : d.styles.circleHighlightedScale;
-            d.text.r = scale*d.styles.circleR;
-            self._updateTextPosition(d, true);
-
-            return scaleAttr(scale);
-          })
-          .style('-webkit-transform', function(d){ // fix safari
-            return scaleAttr((centerLinkId || d.id === centerNodeId) ?
-                d.styles.circleCenterScale : d.styles.circleHighlightedScale);
-          })
           .attr('fill', function(d){
             return d.id === centerNodeId ?
                 d.styles.circleCenterFill : d.styles.circleHighlightedFill;
@@ -462,6 +453,19 @@
           .attr('stroke-width', function(d){
             return d.id === centerNodeId ?
                 d.styles.circleCenterStrokeWidth : d.styles.circleHighlightedStrokeWidth;
+          }).each(function(d){
+            var scale = (centerLinkId || d.id === centerNodeId) ?
+                      d.styles.circleCenterScale : d.styles.circleHighlightedScale;
+            d.text.r = scale*d.styles.circleR;
+            self._updateTextPosition(d, true);
+
+            if(browser.name === 'MSIE'){
+              // https://stackoverflow.com/questions/19890747/css3-transform-property-works-different-in-ie9
+              d3.select(this).attr('transform', 'matrix('+scale+',0,0,'+scale+',0,0)');
+            }else{
+              d3.select(this)
+                  .style({'transform': scaleAttr(scale), '-webkit-transform': scaleAttr(scale)});
+            }
           });
 
       this.svg.selectAll('.highlighted-line')
@@ -476,15 +480,20 @@
 
     }else{
       this.svg.selectAll('.highlighted-node circle')
-          .style('transform', function(d){
-            d.text.r = d.styles.circleR;
-            self._updateTextPosition(d, true);
-            return 'scale(1,1)';
-          })
-          .style('-webkit-transform', 'scale(1,1)') // safari
           .attr('fill', function(d){return d.styles.circleFill;})
           .attr('stroke', function(d){return d.styles.circleStroke;})
-          .attr('stroke-width', function(d){return d.styles.circleStrokeWidth;});
+          .attr('stroke-width', function(d){return d.styles.circleStrokeWidth;})
+          .each(function(d){
+            // restore text position
+            d.text.r = d.styles.circleR;
+            self._updateTextPosition(d, true);
+
+            if(browser.name === 'MSIE'){
+              d3.select(this).attr('transform', 'matrix(1,0,0,1,0,0)');
+            }else{
+              d3.select(this).style({'transform': 'scale(1,1)', '-webkit-transform': 'scale(1,1)'});
+            }
+          });
 
       this.svg.selectAll('.highlighted-line')
           .attr('stroke', function(d){return d.styles.lineStroke;})
@@ -961,4 +970,23 @@
       }
     }
   }
+
+  // source: https://stackoverflow.com/questions/5916900/how-can-you-detect-the-version-of-a-browser
+  function getBrowserInfo(){
+    var ua= navigator.userAgent,tem,M=ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i) || [];
+    if(/trident/i.test(M[1])){
+        tem=/\brv[ :]+(\d+)/g.exec(ua) || [];
+        return {name:'IE ',version:(tem[1]||'')};
+        }
+    if(M[1]==='Chrome'){
+        tem=ua.match(/\bOPR\/(\d+)/);
+        if(tem!=null)   {return {name:'Opera', version:tem[1]};}
+        }
+    M=M[2]? [M[1], M[2]]: [navigator.appName, navigator.appVersion, '-?'];
+    if((tem=ua.match(/version\/(\d+)/i))!=null) {M.splice(1,1,tem[1]);}
+    return {
+      name: M[0],
+      version: M[1]
+    };
+ }
 })();
