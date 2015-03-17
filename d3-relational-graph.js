@@ -441,59 +441,55 @@
     var self = this;
     if(isHighlighting){
       this.svg.selectAll('.masked').attr('opacity', this.styles.maskedOpacity);
-      this.svg.selectAll('.highlighted-node circle')
-          .attr('fill', function(d){
-            return d.id === centerNodeId ?
-                d.styles.circleCenterFill : d.styles.circleHighlightedFill;
-          })
-          .attr('stroke', function(d){
-            return d.id === centerNodeId ?
-                d.styles.circleCenterStroke : d.styles.circleHighlightedStroke;
-          })
-          .attr('stroke-width', function(d){
-            return d.id === centerNodeId ?
-                d.styles.circleCenterStrokeWidth : d.styles.circleHighlightedStrokeWidth;
-          }).each(function(d){
-            var scale = (centerLinkId || d.id === centerNodeId) ?
-                      d.styles.circleCenterScale : d.styles.circleHighlightedScale;
-            d.text.r = scale*d.styles.circleR;
-            self._updateTextPosition(d, true);
 
-            if(browser.name === 'MSIE'){
-              // https://stackoverflow.com/questions/19890747/css3-transform-property-works-different-in-ie9
-              d3.select(this).attr('transform', 'matrix('+scale+',0,0,'+scale+',0,0)');
-            }else{
-              d3.select(this)
-                  .style({'transform': scaleAttr(scale), '-webkit-transform': scaleAttr(scale)});
-            }
-          });
+      this.svg.selectAll('.highlighted-node circle').each(function(d){
+        var isCenterNode = d.id === centerNodeId;
+        var circle = d3.select(this);
 
-      this.svg.selectAll('.highlighted-line')
-          .attr('stroke', function(d){
-            return d.id === centerLinkId ?
-                d.styles.lineCenterStroke : d.styles.lineHighlightedStroke;
-          })
-          .attr('stroke-width', function(d){
-            return d.id === centerLinkId ?
-                d.styles.lineCenterStrokeWidth : d.styles.lineHighlightedStrokeWidth;
-          });
+        circle.attr({
+          'fill': isCenterNode ? d.styles.circleCenterFill : d.styles.circleHighlightedFill,
+          'stroke': isCenterNode ? d.styles.circleCenterStroke : d.styles.circleHighlightedStroke,
+          'stroke-width': isCenterNode ? d.styles.circleCenterStrokeWidth : d.styles.circleHighlightedStrokeWidth,
+        });
 
+        var scale = (centerLinkId || isCenterNode) ? d.styles.circleCenterScale : d.styles.circleHighlightedScale;
+        d.text.r = scale*d.styles.circleR;
+        self._updateTextPosition(d, true);
+
+        if(browser.name === 'MSIE'){
+          // https://stackoverflow.com/questions/19890747/css3-transform-property-works-different-in-ie9
+          circle.attr('transform', 'matrix('+scale+',0,0,'+scale+',0,0)');
+        }else{
+          circle.style({'transform': scaleAttr(scale), '-webkit-transform': scaleAttr(scale)});
+        }
+      });
+
+      this.svg.selectAll('.highlighted-line').each(function(d){
+        var isCenterLink = d.id === centerLinkId;
+        d3.select(this).attr({
+          'stroke': isCenterLink ? d.styles.lineCenterStroke : d.styles.lineHighlightedStroke,
+          'stroke-width': isCenterLink ? d.styles.lineCenterStrokeWidth : d.styles.lineHighlightedStrokeWidth,
+        });
+      });
     }else{
-      this.svg.selectAll('.highlighted-node circle')
-          .attr('fill', function(d){return d.styles.circleFill;})
-          .attr('stroke', function(d){return d.styles.circleStroke;})
-          .attr('stroke-width', function(d){return d.styles.circleStrokeWidth;})
-          .each(function(d){
-            // restore text position
-            d.text.r = d.styles.circleR;
-            self._updateTextPosition(d, true);
+      this.svg.selectAll('.highlighted-node circle').each(function(d){
+        var circle = d3.select(this);
 
-            if(browser.name === 'MSIE'){
-              d3.select(this).attr('transform', 'matrix(1,0,0,1,0,0)');
-            }else{
-              d3.select(this).style({'transform': 'scale(1,1)', '-webkit-transform': 'scale(1,1)'});
-            }
-          });
+        circle.attr({
+          'fill': d.styles.circleFill,
+          'stroke': d.styles.circleStroke,
+          'stroke-width': d.styles.circleStrokeWidth,
+        });
+
+        d.text.r = d.styles.circleR;
+        self._updateTextPosition(d, true);
+
+        if(browser.name === 'MSIE'){
+          circle.attr('transform', 'matrix(1,0,0,1,0,0)');
+        }else{
+          circle.style({'transform': 'scale(1,1)', '-webkit-transform': 'scale(1,1)'});
+        }
+      });
 
       this.svg.selectAll('.highlighted-line')
           .attr('stroke', function(d){return d.styles.lineStroke;})
