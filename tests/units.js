@@ -69,17 +69,17 @@ var data1 = {
 var data2 = {
   nodes: [{
     title: null,
-    type: 'a'
+    filter: 'a'
   }, {
     title: 'has title',
     id: 'has-id',
-    type: 'b'
+    filter: 'b'
   }, {
     title: '3rd note',
-    type: 'a'
+    filter: 'a'
   }, {
     title: '4th node',
-    type: 'c'
+    filter: 'c'
   }],
   links: [
     {
@@ -88,7 +88,7 @@ var data2 = {
     },{
       source: 0,
       target: 2,
-      type: 'link2',
+      filter: 'link2',
       styles: {
         lineStrokeWidth: 5,
         lineStrokeDasharray: '5,5',
@@ -348,7 +348,7 @@ function runTests() {
   });
 
   test('toggle nodes by type', function(){
-    graph2.toggleNodesByType('a');
+    graph2.toggleNodes('a', false);
     notEqual($('#'+data2.nodes[1].groupId).css('display'), 'none');
     notEqual($('#'+data2.nodes[3].groupId).css('display'), 'none');
 
@@ -358,7 +358,7 @@ function runTests() {
     equal($('#'+data2.links[1].lineId).css('display'), 'none');
 
 
-    graph2.toggleNodesByType('b');
+    graph2.toggleNodes('b', false);
     notEqual($('#'+data2.nodes[3].groupId).css('display'), 'none');
 
     equal($('#'+data2.nodes[0].groupId).css('display'), 'none');
@@ -368,7 +368,7 @@ function runTests() {
     equal($('#'+data2.links[1].lineId).css('display'), 'none');
 
 
-    graph2.toggleNodesByType('a');
+    graph2.toggleNodes('a', true);
     notEqual($('#'+data2.nodes[3].groupId).css('display'), 'none');
     notEqual($('#'+data2.nodes[0].groupId).css('display'), 'none');
     notEqual($('#'+data2.nodes[2].groupId).css('display'), 'none');

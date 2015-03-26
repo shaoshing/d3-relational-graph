@@ -123,7 +123,7 @@
       node.groupId = 'graph-group-' + node.id;
       node.circleId = 'graph-circle-' + node.id;
       node.textId = 'graph-text-' + node.id;
-      node.typeClass = 'graph-type-' + (node.type || 'none');
+      node.filterClass = 'graph-f-' + (node.filter || 'none');
     });
 
     self.data.links.forEach(function(link) {
@@ -222,7 +222,7 @@
           .enter()
             .append('g')
             .attr('title', function(d){ return d.title; })
-            .attr('class', function(d){ return d.typeClass; })
+            .attr('class', function(d){ return d.filterClass; })
             .attr('id', function(d){ return d.groupId; })
             .attr('transform', function(d) {
               self.positions.maxNodeX = Math.max(self.positions.maxNodeX || d.x, d.x);
@@ -497,34 +497,34 @@
     }
   };
 
-  Graph.prototype.toggleNodesByType = function(type){
-    var typeClass = '.graph-type-' + type;
+  Graph.prototype.toggleNodes = function(filter, display){
+    var filterClass = '.graph-f-' + filter;
     var nodeIds = [];
     var lineIds = [];
-    var nodes = this.svg.selectAll(typeClass).data();
+    var nodes = this.svg.selectAll(filterClass).data();
     if(nodes.length === 0) return;
 
-    var toShow = !nodes[0].shown;
+    if(display === undefined) display = !nodes[0].shown;
 
     for(var i = 0; i < nodes.length; i++){
       var node = nodes[i];
-      node.shown = toShow;
+      node.shown = display;
       nodeIds.push(node.groupId);
 
       var relations = this.getNodeRelations(node.id);
       if(relations){
         for(var j = 0; j < relations.links.length; j ++){
           var link = relations.links[j];
-          if(!toShow || (toShow && link.target.shown === link.source.shown))
+          if(!display || (display && link.target.shown === link.source.shown))
             lineIds.push(link.lineId);
         }
       }
     }
 
     if(nodeIds.length !== 0)
-      this.svg.selectAll('#'+nodeIds.join(', #')).style('display', toShow ? 'inline' : 'none');
+      this.svg.selectAll('#'+nodeIds.join(', #')).style('display', display ? 'inline' : 'none');
     if(lineIds.length !== 0)
-      this.svg.selectAll('#'+lineIds.join(', #')).style('display', toShow ? 'inline' : 'none');
+      this.svg.selectAll('#'+lineIds.join(', #')).style('display', display ? 'inline' : 'none');
   };
 
   Graph.prototype.zoom = function(scale){
@@ -895,7 +895,7 @@
 
       var sourceNode = nodes[link.source];
       var targetNode = nodes[link.target];
-      link.id = idPrefix+(link.id || (sourceNode.id + '-' + targetNode.id + '-' + (link.type || 'default')));
+      link.id = idPrefix+(link.id || (sourceNode.id + '-' + targetNode.id + '-' + (link.filter || 'default')));
       link.isNode = false;
 
       var styles = merge(DEFAULT_LINK_STYLES, data.styles);
@@ -957,7 +957,7 @@
            link.source === link.target)
           throw 'D3RGraph: Link (source: '+link.source+', target: '+link.target+') does not exist.';
 
-        var linkId = link.source + '-' + link.target + '-' + link.type;
+        var linkId = link.source + '-' + link.target + '-' + link.filter;
         links[linkId] = links[linkId] || [];
         links[linkId].push(link);
         if(links[linkId].length > 1){
