@@ -123,7 +123,7 @@
       node.groupId = 'graph-group-' + node.id;
       node.circleId = 'graph-circle-' + node.id;
       node.textId = 'graph-text-' + node.id;
-      node.filterClass = 'graph-f-' + (node.filter || 'none');
+      node.filterClass = 'graph-f-' + node.filter.join(' graph-f-' );
     });
 
     self.data.links.forEach(function(link) {
@@ -877,6 +877,7 @@
       node.id = idPrefix+(node.id || i).toString();
       node.shown = true;
       node.isNode = true;
+      node.filter = [].concat(node.filter || 'none');
       var styles = merge(DEFAULT_NODE_STYLES, data.styles);
       node.styles = merge(styles, node.styles);
       _inheritStyle(node.styles, {
@@ -895,7 +896,7 @@
 
       var sourceNode = nodes[link.source];
       var targetNode = nodes[link.target];
-      link.id = idPrefix+(link.id || (sourceNode.id + '-' + targetNode.id + '-' + (link.filter || 'default')));
+      link.id = idPrefix+(link.id || (sourceNode.id + '-' + targetNode.id));
       link.isNode = false;
 
       var styles = merge(DEFAULT_LINK_STYLES, data.styles);
@@ -957,11 +958,13 @@
            link.source === link.target)
           throw 'D3RGraph: Link (source: '+link.source+', target: '+link.target+') does not exist.';
 
-        var linkId = link.source + '-' + link.target + '-' + link.filter;
+        var linkId = link.source + '-' + link.target;
         links[linkId] = links[linkId] || [];
         links[linkId].push(link);
         if(links[linkId].length > 1){
+          console.log(links);
           throw 'D3RGraph: Fond duplicate link (source: '+link.source+', target: '+link.target+').';
+
         }
       }
     }

@@ -69,7 +69,7 @@ var data1 = {
 var data2 = {
   nodes: [{
     title: null,
-    filter: 'a'
+    filter: ['a', 'e']
   }, {
     title: 'has title',
     id: 'has-id',
@@ -88,16 +88,12 @@ var data2 = {
     },{
       source: 0,
       target: 2,
-      filter: 'link2',
       styles: {
         lineStrokeWidth: 5,
         lineStrokeDasharray: '5,5',
         lineStroke: 'red',
         lineCenterStroke: '#ddd',
       }
-    },{
-      source: 0,
-      target: 2
     }
   ]
 };
@@ -347,8 +343,8 @@ function runTests() {
     ]);
   });
 
-  test('toggle nodes by type', function(){
-    graph2.toggleNodes('a', false);
+  test('toggle nodes', function(){
+    graph2.toggleNodes('a');
     notEqual($('#'+data2.nodes[1].groupId).css('display'), 'none');
     notEqual($('#'+data2.nodes[3].groupId).css('display'), 'none');
 
@@ -358,7 +354,7 @@ function runTests() {
     equal($('#'+data2.links[1].lineId).css('display'), 'none');
 
 
-    graph2.toggleNodes('b', false);
+    graph2.toggleNodes('b');
     notEqual($('#'+data2.nodes[3].groupId).css('display'), 'none');
 
     equal($('#'+data2.nodes[0].groupId).css('display'), 'none');
@@ -368,13 +364,22 @@ function runTests() {
     equal($('#'+data2.links[1].lineId).css('display'), 'none');
 
 
-    graph2.toggleNodes('a', true);
+    graph2.toggleNodes('a');
     notEqual($('#'+data2.nodes[3].groupId).css('display'), 'none');
     notEqual($('#'+data2.nodes[0].groupId).css('display'), 'none');
     notEqual($('#'+data2.nodes[2].groupId).css('display'), 'none');
     notEqual($('#'+data2.links[1].lineId).css('display'), 'none');
 
     equal($('#'+data2.nodes[1].groupId).css('display'), 'none');
+    equal($('#'+data2.links[0].lineId).css('display'), 'none');
+
+
+    graph2.toggleNodes('e', false);
+    equal($('#'+data2.nodes[0].groupId).css('display'), 'none');
+
+    notEqual($('#'+data2.nodes[3].groupId).css('display'), 'none');
+    notEqual($('#'+data2.nodes[2].groupId).css('display'), 'none');
+    equal($('#'+data2.links[1].lineId).css('display'), 'none');;
     equal($('#'+data2.links[0].lineId).css('display'), 'none');
   });
 
