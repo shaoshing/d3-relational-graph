@@ -1,6 +1,6 @@
 /*jslint latedef:false */
 /*global D3RGraph: true */
-/*global test:true, ok:true, equal:true, notEqual:true, Q:true */
+/*global test:true, ok:true, equal:true, notEqual:true, Q:true, sprintf:true */
 
 'use strict';
 
@@ -316,24 +316,24 @@ function runTests() {
   });
 
   test('toggle nodes', function(){
-    function assertVisible(ids, visible){
+    function assertVisible(scope, ids, visible){
       ids = [].concat(ids);
       visible = visible === undefined ? true : visible;
       ids.forEach(function(id){
         if(visible)
-          notEqual($('#'+id).css('display'), 'none');
+          notEqual('none', $('#'+id).css('display'), sprintf('%s: %s should be visible', scope, id));
         else
-          equal($('#'+id).css('display'), 'none');
+          equal('none', $('#'+id).css('display'), sprintf('%s: %s should be invisible', scope, id));
       });
     }
 
 
     graph2.toggleNodes('a');
-    assertVisible([
+    assertVisible('hide [a]', [
       data2.nodes[1].groupId,
       data2.nodes[3].groupId]
       );
-    assertVisible([
+    assertVisible('hide [a]', [
       data2.nodes[0].groupId,
       data2.nodes[2].groupId,
       data2.links[0].lineId,
@@ -342,39 +342,55 @@ function runTests() {
 
 
     graph2.toggleNodes('b');
-    assertVisible([data2.nodes[3].groupId]);
-    assertVisible([
+    assertVisible('hide [b]', [
+      data2.nodes[3].groupId,
+      ]);
+    assertVisible('hide [b]', [
       data2.nodes[0].groupId,
-      data2.nodes[2].groupId,
       data2.nodes[1].groupId,
+      data2.nodes[2].groupId,
       data2.links[0].lineId,
       data2.links[1].lineId,
+      ], false);
+
+
+    graph2.toggleNodes('e');
+    assertVisible('hide [e]', [
+      data2.nodes[3].groupId,
+      ]);
+    assertVisible('hide [e]', [
+      data2.nodes[0].groupId,
+      data2.nodes[1].groupId,
+      data2.nodes[2].groupId,
+      data2.links[1].lineId,
+      data2.links[0].lineId,
       ], false);
 
 
     graph2.toggleNodes('a');
-    assertVisible([
+    assertVisible('show [a]', [
+      data2.nodes[2].groupId,
       data2.nodes[3].groupId,
+      ]);
+    assertVisible('show [a]', [
+      data2.nodes[0].groupId, // node 0's filter e is still active
+      data2.nodes[1].groupId,
+      data2.links[1].lineId,
+      ], false);
+
+
+    graph2.toggleNodes('e');
+    assertVisible('show [e]', [
       data2.nodes[0].groupId,
       data2.nodes[2].groupId,
+      data2.nodes[3].groupId,
       data2.links[1].lineId,
       ]);
-    assertVisible([
+    assertVisible('show [e]', [
       data2.nodes[1].groupId,
       data2.links[0].lineId,
       ], false);
-
-
-    graph2.toggleNodes('e', false);
-    assertVisible([
-      data2.nodes[3].groupId,
-      data2.nodes[2].groupId,
-      ]);
-    assertVisible([
-      data2.links[1].lineId,
-      data2.links[0].lineId,
-      data2.nodes[0].groupId,
-      ], false);
+    console.log(graph2.filter);
   });
 
   test('validations', function(assert){

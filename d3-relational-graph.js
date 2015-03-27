@@ -84,6 +84,7 @@
     this.data = data;
     this.styles = data.styles;
     this.options = merge(DEFAULT_OPTIONS, options);
+    this.filter = new Filter(this.data.nodes);
   }
   window.D3RGraph = Graph;
   Graph.Events = EVENTS;
@@ -497,34 +498,33 @@
     }
   };
 
-  Graph.prototype.toggleNodes = function(filter, display){
-    var filterClass = '.graph-f-' + filter;
-    var nodeIds = [];
-    var lineIds = [];
-    var nodes = this.svg.selectAll(filterClass).data();
+  Graph.prototype.toggleNodes = function(filter){
+    var nodes = this.filter.toggleFilter(filter);
     if(nodes.length === 0) return;
 
-    if(display === undefined) display = !nodes[0].shown;
-
+    var hidden = this.filter.hasFilter(filter);
+    var lineIds = [];
+    var nodeIds = [];
     for(var i = 0; i < nodes.length; i++){
       var node = nodes[i];
-      node.shown = display;
       nodeIds.push(node.groupId);
 
       var relations = this.getNodeRelations(node.id);
       if(relations){
         for(var j = 0; j < relations.links.length; j ++){
           var link = relations.links[j];
-          if(!display || (display && link.target.shown === link.source.shown))
+          if(hidden || (link.target.hidden === link.source.hidden))
             lineIds.push(link.lineId);
         }
       }
     }
 
     if(nodeIds.length !== 0)
-      this.svg.selectAll('#'+nodeIds.join(', #')).style('display', display ? 'inline' : 'none');
+      this.svg.selectAll('#'+nodeIds.join(', #')).style('display', hidden ? 'none' : 'inline');
     if(lineIds.length !== 0)
-      this.svg.selectAll('#'+lineIds.join(', #')).style('display', display ? 'inline' : 'none');
+      this.svg.selectAll('#'+lineIds.join(', #')).style('display', hidden ? 'none' : 'inline');
+
+    return !hidden;
   };
 
   Graph.prototype.zoom = function(scale){
@@ -875,7 +875,6 @@
     for(var i = 0; i < nodes.length; i++){
       var node = nodes[i];
       node.id = idPrefix+(node.id || i).toString();
-      node.shown = true;
       node.isNode = true;
       node.filter = [].concat(node.filter || 'none');
       var styles = merge(DEFAULT_NODE_STYLES, data.styles);
@@ -962,7 +961,6 @@
         links[linkId] = links[linkId] || [];
         links[linkId].push(link);
         if(links[linkId].length > 1){
-          console.log(links);
           throw 'D3RGraph: Fond duplicate link (source: '+link.source+', target: '+link.target+').';
 
         }
@@ -987,5 +985,51 @@
       name: M[0],
       version: M[1]
     };
- }
+  }
+
+  function Filter(nodes){
+    this.nodes = nodes;
+    this.activeFilters = {};
+
+    var filterMapNodes = {};
+    nodes.forEach(function(node){
+      node.hidden = false;
+      node.filter.forEach(function(filter){
+        filterMapNodes[filter] = filterMapNodes[filter] || [];
+        filterMapNodes[filter].push(node);
+      });
+    });
+    this.filterMapNodes = filterMapNodes;
+  }
+
+  Filter.prototype.toggleFilter = function(filter){
+    var affectedNodes = this.filterMapNodes[filter];
+    if(this.hasFilter(filter)){
+      this.activeFilters[filter] = undefined;
+      for(var f in this.activeFilters){
+        var hiddenNodes = this.activeFilters[f];
+        if(!hiddenNodes) continue;
+        affectedNodes = _removeExisted(affectedNodes, hiddenNodes);
+      }
+    }else{
+      this.activeFilters[filter] = affectedNodes;
+    }
+
+    var hidden = this.hasFilter(filter);
+    affectedNodes.forEach(function(node){
+      node.hidden = hidden;
+    });
+    return affectedNodes;
+
+    function _removeExisted(a, b){
+      return a.filter(function(node){
+        return b.indexOf(node) === -1;
+      });
+    }
+  };
+
+  Filter.prototype.hasFilter = function(filter){
+    return this.activeFilters[filter] !== undefined;
+  };
+
 })();
