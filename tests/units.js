@@ -1,6 +1,6 @@
 /*jslint latedef:false */
 /*global D3RGraph: true */
-/*global test:true, ok:true, equal:true, notEqual:true, async:true */
+/*global test:true, ok:true, equal:true, notEqual:true, Q:true */
 
 'use strict';
 
@@ -108,15 +108,6 @@ graph1.on(D3RGraph.Events.DREW, runTests);
 var graph2 = new D3RGraph('#graph-2', data2);
 graph2.on(D3RGraph.Events.DREW, runTests);
 
-function delay(ms){
-  return function(callback){
-    setTimeout(function(){
-      callback();
-    }, ms);
-  };
-}
-
-
 var firedEvents = {};
 graph1.on(D3RGraph.Events.BEFORE_LOAD, function(graph){firedEvents.beforeLoad = {graph: graph};});
 graph1.on(D3RGraph.Events.LOADING, function(graph, progress){firedEvents.loading = {graph:graph, progress:progress};});
@@ -209,79 +200,68 @@ function runTests() {
     var highlightedCircle = $('#'+data1.nodes[1].groupId+' circle');
     var maskedCircle = $('#'+data1.nodes[2].groupId+' circle');
 
-    async.series([
-      delay(700),
-      function(callback){
-        equal(centerCircle.attr('fill'), data1.styles.circleCenterFill);
-        equal(centerCircle.attr('stroke'), data1.styles.circleCenterStroke);
-        equal(centerCircle.attr('stroke-width'), data1.styles.circleCenterStrokeWidth);
-        notEqual(centerCircle.attr('style').indexOf('scale('+data1.styles.circleCenterScale), -1);
+    Q().delay(700).then(function(){
+      equal(centerCircle.attr('fill'), data1.styles.circleCenterFill);
+      equal(centerCircle.attr('stroke'), data1.styles.circleCenterStroke);
+      equal(centerCircle.attr('stroke-width'), data1.styles.circleCenterStrokeWidth);
+      notEqual(centerCircle.attr('style').indexOf('scale('+data1.styles.circleCenterScale), -1);
 
-        equal(highlightedCircle.attr('fill'), data1.styles.circleHighlightedFill);
-        equal(highlightedCircle.attr('stroke'), data1.styles.circleHighlightedStroke);
-        equal(highlightedCircle.attr('stroke-width'), data1.styles.circleHighlightedStrokeWidth);
-        notEqual(highlightedCircle.attr('style').indexOf('scale('+data1.styles.circleHighlightedScale), -1);
+      equal(highlightedCircle.attr('fill'), data1.styles.circleHighlightedFill);
+      equal(highlightedCircle.attr('stroke'), data1.styles.circleHighlightedStroke);
+      equal(highlightedCircle.attr('stroke-width'), data1.styles.circleHighlightedStrokeWidth);
+      notEqual(highlightedCircle.attr('style').indexOf('scale('+data1.styles.circleHighlightedScale), -1);
 
-        equal(maskedCircle.attr('fill'), data1.styles.circleFill);
-        equal(maskedCircle.attr('stroke'), D3RGraph.DEFAULT_NODE_STYLES.circleStroke);
-        equal(maskedCircle.attr('stroke-width'), D3RGraph.DEFAULT_NODE_STYLES.circleStrokeWidth);
+      equal(maskedCircle.attr('fill'), data1.styles.circleFill);
+      equal(maskedCircle.attr('stroke'), D3RGraph.DEFAULT_NODE_STYLES.circleStroke);
+      equal(maskedCircle.attr('stroke-width'), D3RGraph.DEFAULT_NODE_STYLES.circleStrokeWidth);
 
-        equal(line1.attr('stroke'), data1.links[0].styles.lineHighlightedStroke, 'should apply custom line stroke for highlighting');
-        equal(line1.attr('stroke-width'), data1.links[0].styles.lineHighlightedStrokeWidth, 'should apply custom line stroke-width for highlighting');
-        equal(line2.attr('stroke'), data1.styles.lineHighlightedStroke, 'should apply custom line stroke for highlighting from global');
-        equal(line2.attr('stroke-width'), data1.links[1].styles.lineHighlightedStrokeWidth, 'should apply custom line stroke-width for highlighting');
+      equal(line1.attr('stroke'), data1.links[0].styles.lineHighlightedStroke, 'should apply custom line stroke for highlighting');
+      equal(line1.attr('stroke-width'), data1.links[0].styles.lineHighlightedStrokeWidth, 'should apply custom line stroke-width for highlighting');
+      equal(line2.attr('stroke'), data1.styles.lineHighlightedStroke, 'should apply custom line stroke for highlighting from global');
+      equal(line2.attr('stroke-width'), data1.links[1].styles.lineHighlightedStrokeWidth, 'should apply custom line stroke-width for highlighting');
 
-        $('#graph-1 .background').d3Click();
-        callback();
-      },
-      delay(700),
-      function(callback){
-        equal(centerCircle.attr('fill'), data1.nodes[0].styles.circleFill, 'should use node style');
-        equal(centerCircle.attr('stroke'), D3RGraph.DEFAULT_NODE_STYLES.circleStroke);
-        equal(centerCircle.attr('stroke-width'), D3RGraph.DEFAULT_NODE_STYLES.circleStrokeWidth);
-        notEqual(centerCircle.attr('style').indexOf('scale(1'), -1);
+      $('#graph-1 .background').d3Click();
+    })
+    .delay(700).then(function(){
+      equal(centerCircle.attr('fill'), data1.nodes[0].styles.circleFill, 'should use node style');
+      equal(centerCircle.attr('stroke'), D3RGraph.DEFAULT_NODE_STYLES.circleStroke);
+      equal(centerCircle.attr('stroke-width'), D3RGraph.DEFAULT_NODE_STYLES.circleStrokeWidth);
+      notEqual(centerCircle.attr('style').indexOf('scale(1'), -1);
 
-        equal(highlightedCircle.attr('fill'), data1.nodes[1].styles.circleFill, 'should use node style');
-        equal(highlightedCircle.attr('stroke'), D3RGraph.DEFAULT_NODE_STYLES.circleStroke);
-        equal(highlightedCircle.attr('stroke-width'), D3RGraph.DEFAULT_NODE_STYLES.circleStrokeWidth);
-        notEqual(highlightedCircle.attr('style').indexOf('scale(1'), -1);
+      equal(highlightedCircle.attr('fill'), data1.nodes[1].styles.circleFill, 'should use node style');
+      equal(highlightedCircle.attr('stroke'), D3RGraph.DEFAULT_NODE_STYLES.circleStroke);
+      equal(highlightedCircle.attr('stroke-width'), D3RGraph.DEFAULT_NODE_STYLES.circleStrokeWidth);
+      notEqual(highlightedCircle.attr('style').indexOf('scale(1'), -1);
 
-        equal(maskedCircle.attr('fill'), data1.styles.circleFill, 'should use global style');
-        equal(maskedCircle.attr('stroke'), D3RGraph.DEFAULT_NODE_STYLES.circleStroke);
-        equal(maskedCircle.attr('stroke-width'), D3RGraph.DEFAULT_NODE_STYLES.circleStrokeWidth);
+      equal(maskedCircle.attr('fill'), data1.styles.circleFill, 'should use global style');
+      equal(maskedCircle.attr('stroke'), D3RGraph.DEFAULT_NODE_STYLES.circleStroke);
+      equal(maskedCircle.attr('stroke-width'), D3RGraph.DEFAULT_NODE_STYLES.circleStrokeWidth);
 
-        equal(line1.attr('stroke'), data1.links[0].styles.lineStroke, 'should restore custom line stroke style after cancel highlighting');
-        equal(line1.attr('stroke-width'), data1.links[0].styles.lineStrokeWidth, 'should restore custom line stroke-width style after cancel highlighting');
-        equal(line2.attr('stroke'), D3RGraph.DEFAULT_LINK_STYLES.lineStroke, 'should restore default line stroke style after cancel highlighting');
-        equal(line2.attr('stroke-width'), D3RGraph.DEFAULT_LINK_STYLES.lineStrokeWidth, 'should restore default line stroke-width style after cancel highlighting');
-        done();
-        callback();
-      }
-    ]);
+      equal(line1.attr('stroke'), data1.links[0].styles.lineStroke, 'should restore custom line stroke style after cancel highlighting');
+      equal(line1.attr('stroke-width'), data1.links[0].styles.lineStrokeWidth, 'should restore custom line stroke-width style after cancel highlighting');
+      equal(line2.attr('stroke'), D3RGraph.DEFAULT_LINK_STYLES.lineStroke, 'should restore default line stroke style after cancel highlighting');
+      equal(line2.attr('stroke-width'), D3RGraph.DEFAULT_LINK_STYLES.lineStrokeWidth, 'should restore default line stroke-width style after cancel highlighting');
+    })
+    .done(done);
   });
 
   test('centering', function(assert){
     var prePosition = graph2.zoomBehavior.translate();
     var done = assert.async();
     $('#'+data2.nodes[0].groupId).d3Click();
-    async.series([
-      delay(700),
-      function(callback) {
-        var curPosition = graph2.zoomBehavior.translate();
-        notEqual(prePosition, curPosition);
 
-        prePosition = graph2.zoomBehavior.translate();
-        $('#'+data2.links[0].lineId).d3Click();
-        callback();
-      },
-      delay(700),
-      function(callback){
-        var curPosition = graph2.zoomBehavior.translate();
-        notEqual(prePosition, curPosition);
-        done();
-        callback();
-      }
-    ]);
+    Q().delay(700).then(function() {
+      var curPosition = graph2.zoomBehavior.translate();
+      notEqual(prePosition, curPosition);
+
+      prePosition = graph2.zoomBehavior.translate();
+      $('#'+data2.links[0].lineId).d3Click();
+    }).delay(700)
+    .then(function(){
+      var curPosition = graph2.zoomBehavior.translate();
+      notEqual(prePosition, curPosition);
+    })
+    .done(done);
   });
 
   test('highlighting and relations', function(assert){
@@ -297,50 +277,42 @@ function runTests() {
 
     var done = assert.async();
     $('#'+data1.nodes[3].groupId).d3Click();
-    async.series([
-      delay(700),
-      function(callback){
-        ok($('#'+data1.nodes[0].groupId).attr('class').indexOf('highlighted-node') !== -1);
-        ok($('#'+data1.nodes[3].groupId).attr('class').indexOf('highlighted-node') !== -1);
-        ok($('#'+data1.nodes[3].groupId).attr('class').indexOf('center') !== -1);
-        ok($('#'+data1.nodes[1].groupId).attr('class').indexOf('highlighted-node') === -1);
-        ok($('#'+data1.nodes[2].groupId).attr('class').indexOf('highlighted-node') === -1);
 
-        ok($('#'+data1.links[1].lineId).attr('class').indexOf('highlighted-line') !== -1);
-        ok($('#'+data1.links[0].lineId).attr('class').indexOf('highlighted-line') === -1);
+    Q().delay(700).then(function(){
+      ok($('#'+data1.nodes[0].groupId).attr('class').indexOf('highlighted-node') !== -1);
+      ok($('#'+data1.nodes[3].groupId).attr('class').indexOf('highlighted-node') !== -1);
+      ok($('#'+data1.nodes[3].groupId).attr('class').indexOf('center') !== -1);
+      ok($('#'+data1.nodes[1].groupId).attr('class').indexOf('highlighted-node') === -1);
+      ok($('#'+data1.nodes[2].groupId).attr('class').indexOf('highlighted-node') === -1);
 
-        $('#'+data1.nodes[0].groupId).d3Click();
-        callback();
-      },
-      delay(700),
-      function(callback){
-        ok($('#'+data1.nodes[0].groupId).attr('class').indexOf('highlighted-node') !== -1);
-        ok($('#'+data1.nodes[0].groupId).attr('class').indexOf('center') !== -1);
-        ok($('#'+data1.nodes[3].groupId).attr('class').indexOf('highlighted-node') !== -1);
-        ok($('#'+data1.nodes[1].groupId).attr('class').indexOf('highlighted-node') !== -1);
-        ok($('#'+data1.nodes[2].groupId).attr('class').indexOf('highlighted-node') === -1);
+      ok($('#'+data1.links[1].lineId).attr('class').indexOf('highlighted-line') !== -1);
+      ok($('#'+data1.links[0].lineId).attr('class').indexOf('highlighted-line') === -1);
 
-        ok($('#'+data1.links[1].lineId).attr('class').indexOf('highlighted-line') !== -1);
-        ok($('#'+data1.links[0].lineId).attr('class').indexOf('highlighted-line') !== -1);
+      $('#'+data1.nodes[0].groupId).d3Click();
+    })
+    .delay(700).then(function(){
+      ok($('#'+data1.nodes[0].groupId).attr('class').indexOf('highlighted-node') !== -1);
+      ok($('#'+data1.nodes[0].groupId).attr('class').indexOf('center') !== -1);
+      ok($('#'+data1.nodes[3].groupId).attr('class').indexOf('highlighted-node') !== -1);
+      ok($('#'+data1.nodes[1].groupId).attr('class').indexOf('highlighted-node') !== -1);
+      ok($('#'+data1.nodes[2].groupId).attr('class').indexOf('highlighted-node') === -1);
 
-        $('#'+data1.links[0].lineId).d3Click();
-        callback();
-      },
-      delay(700),
-      function(callback){
-        ok($('#'+data1.links[0].lineId).attr('class').indexOf('highlighted-line') !== -1);
-        ok($('#'+data1.links[0].lineId).attr('class').indexOf('center') !== -1);
-        ok($('#'+data1.links[1].lineId).attr('class').indexOf('highlighted-line') === -1);
+      ok($('#'+data1.links[1].lineId).attr('class').indexOf('highlighted-line') !== -1);
+      ok($('#'+data1.links[0].lineId).attr('class').indexOf('highlighted-line') !== -1);
 
-        ok($('#'+data1.nodes[0].groupId).attr('class').indexOf('highlighted-node') !== -1);
-        ok($('#'+data1.nodes[1].groupId).attr('class').indexOf('highlighted-node') !== -1);
-        ok($('#'+data1.nodes[2].groupId).attr('class').indexOf('highlighted-node') === -1);
-        ok($('#'+data1.nodes[3].groupId).attr('class').indexOf('highlighted-node') === -1);
+      $('#'+data1.links[0].lineId).d3Click();
+    })
+    .delay(700).then(function(){
+      ok($('#'+data1.links[0].lineId).attr('class').indexOf('highlighted-line') !== -1);
+      ok($('#'+data1.links[0].lineId).attr('class').indexOf('center') !== -1);
+      ok($('#'+data1.links[1].lineId).attr('class').indexOf('highlighted-line') === -1);
 
-        done();
-        callback();
-      }
-    ]);
+      ok($('#'+data1.nodes[0].groupId).attr('class').indexOf('highlighted-node') !== -1);
+      ok($('#'+data1.nodes[1].groupId).attr('class').indexOf('highlighted-node') !== -1);
+      ok($('#'+data1.nodes[2].groupId).attr('class').indexOf('highlighted-node') === -1);
+      ok($('#'+data1.nodes[3].groupId).attr('class').indexOf('highlighted-node') === -1);
+    })
+    .done(done);
   });
 
   test('toggle nodes', function(){
