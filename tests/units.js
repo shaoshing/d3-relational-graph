@@ -316,43 +316,65 @@ function runTests() {
   });
 
   test('toggle nodes', function(){
-    graph2.toggleNodes('a');
-    notEqual($('#'+data2.nodes[1].groupId).css('display'), 'none');
-    notEqual($('#'+data2.nodes[3].groupId).css('display'), 'none');
+    function assertVisible(ids, visible){
+      ids = [].concat(ids);
+      visible = visible === undefined ? true : visible;
+      ids.forEach(function(id){
+        if(visible)
+          notEqual($('#'+id).css('display'), 'none');
+        else
+          equal($('#'+id).css('display'), 'none');
+      });
+    }
 
-    equal($('#'+data2.nodes[0].groupId).css('display'), 'none');
-    equal($('#'+data2.nodes[2].groupId).css('display'), 'none');
-    equal($('#'+data2.links[0].lineId).css('display'), 'none');
-    equal($('#'+data2.links[1].lineId).css('display'), 'none');
+
+    graph2.toggleNodes('a');
+    assertVisible([
+      data2.nodes[1].groupId,
+      data2.nodes[3].groupId]
+      );
+    assertVisible([
+      data2.nodes[0].groupId,
+      data2.nodes[2].groupId,
+      data2.links[0].lineId,
+      data2.links[1].lineId,
+      ], false);
 
 
     graph2.toggleNodes('b');
-    notEqual($('#'+data2.nodes[3].groupId).css('display'), 'none');
-
-    equal($('#'+data2.nodes[0].groupId).css('display'), 'none');
-    equal($('#'+data2.nodes[2].groupId).css('display'), 'none');
-    equal($('#'+data2.nodes[1].groupId).css('display'), 'none');
-    equal($('#'+data2.links[0].lineId).css('display'), 'none');
-    equal($('#'+data2.links[1].lineId).css('display'), 'none');
+    assertVisible([data2.nodes[3].groupId]);
+    assertVisible([
+      data2.nodes[0].groupId,
+      data2.nodes[2].groupId,
+      data2.nodes[1].groupId,
+      data2.links[0].lineId,
+      data2.links[1].lineId,
+      ], false);
 
 
     graph2.toggleNodes('a');
-    notEqual($('#'+data2.nodes[3].groupId).css('display'), 'none');
-    notEqual($('#'+data2.nodes[0].groupId).css('display'), 'none');
-    notEqual($('#'+data2.nodes[2].groupId).css('display'), 'none');
-    notEqual($('#'+data2.links[1].lineId).css('display'), 'none');
-
-    equal($('#'+data2.nodes[1].groupId).css('display'), 'none');
-    equal($('#'+data2.links[0].lineId).css('display'), 'none');
+    assertVisible([
+      data2.nodes[3].groupId,
+      data2.nodes[0].groupId,
+      data2.nodes[2].groupId,
+      data2.links[1].lineId,
+      ]);
+    assertVisible([
+      data2.nodes[1].groupId,
+      data2.links[0].lineId,
+      ], false);
 
 
     graph2.toggleNodes('e', false);
-    equal($('#'+data2.nodes[0].groupId).css('display'), 'none');
-
-    notEqual($('#'+data2.nodes[3].groupId).css('display'), 'none');
-    notEqual($('#'+data2.nodes[2].groupId).css('display'), 'none');
-    equal($('#'+data2.links[1].lineId).css('display'), 'none');;
-    equal($('#'+data2.links[0].lineId).css('display'), 'none');
+    assertVisible([
+      data2.nodes[3].groupId,
+      data2.nodes[2].groupId,
+      ]);
+    assertVisible([
+      data2.links[1].lineId,
+      data2.links[0].lineId,
+      data2.nodes[0].groupId,
+      ], false);
   });
 
   test('validations', function(assert){
