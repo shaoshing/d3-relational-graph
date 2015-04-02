@@ -500,9 +500,10 @@
 
   Graph.prototype.toggleNodes = function(filter){
     var nodes = this.filter.toggleFilter(filter);
-    if(nodes.length === 0) return;
-
     var hidden = this.filter.hasFilter(filter);
+
+    if(nodes.length === 0) return !hidden;
+
     var lineIds = [];
     var nodeIds = [];
     for(var i = 0; i < nodes.length; i++){
@@ -1003,7 +1004,8 @@
   }
 
   Filter.prototype.toggleFilter = function(filter){
-    var affectedNodes = this.filterMapNodes[filter];
+    var affectedNodes = this.filterMapNodes[filter] || [];
+
     if(this.hasFilter(filter)){
       this.activeFilters[filter] = undefined;
       for(var f in this.activeFilters){

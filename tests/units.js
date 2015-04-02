@@ -328,7 +328,7 @@ function runTests() {
     }
 
 
-    graph2.toggleNodes('a');
+    ok(!graph2.toggleNodes('a'));
     assertVisible('hide [a]', [
       data2.nodes[1].groupId,
       data2.nodes[3].groupId]
@@ -341,7 +341,7 @@ function runTests() {
       ], false);
 
 
-    graph2.toggleNodes('b');
+    ok(!graph2.toggleNodes('b'));
     assertVisible('hide [b]', [
       data2.nodes[3].groupId,
       ]);
@@ -354,7 +354,7 @@ function runTests() {
       ], false);
 
 
-    graph2.toggleNodes('e');
+    ok(!graph2.toggleNodes('e'));
     assertVisible('hide [e]', [
       data2.nodes[3].groupId,
       ]);
@@ -367,7 +367,7 @@ function runTests() {
       ], false);
 
 
-    graph2.toggleNodes('a');
+    ok(graph2.toggleNodes('a'));
     assertVisible('show [a]', [
       data2.nodes[2].groupId,
       data2.nodes[3].groupId,
@@ -379,7 +379,7 @@ function runTests() {
       ], false);
 
 
-    graph2.toggleNodes('e');
+    ok(graph2.toggleNodes('e'));
     assertVisible('show [e]', [
       data2.nodes[0].groupId,
       data2.nodes[2].groupId,
@@ -390,7 +390,9 @@ function runTests() {
       data2.nodes[1].groupId,
       data2.links[0].lineId,
       ], false);
-    console.log(graph2.filter);
+
+    ok(!graph2.toggleNodes('isolated filter'));
+    ok(graph2.toggleNodes('isolated filter'));
   });
 
   test('validations', function(assert){
