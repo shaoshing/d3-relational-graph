@@ -769,12 +769,12 @@
     // Assign initial text position
     for(var i = 0; i < this.data.nodes.length; i++){
       var node = this.data.nodes[i];
-      var text = d3.select('#'+node.textId);
+      var textBox = d3.select('#'+node.textId).node().getBBox();
       node.text = {
         t: 0,
         r: parseInt(node.styles.circleR),
-        width: parseInt(text.style('width')),
-        height: parseInt(text.style('height')),
+        width: textBox.width,
+        height: textBox.height,
       };
       self._updateTextPosition(node);
     }
