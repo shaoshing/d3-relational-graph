@@ -425,11 +425,11 @@ function runTests() {
           {}
         ],
         links: [
-          {source: 0, target: 5},
+          {source: undefined, target: 5},
         ]
       });
     },
-    'D3RGraph: Link (source: 0, target: 5) does not exist.',
+    'D3RGraph: Link (source: undefined, target: 5) does not exist.',
     'Invalid Link');
 
     assert.throws(function(){

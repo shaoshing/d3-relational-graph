@@ -953,9 +953,7 @@
       var links = {};
       for(var j = 0; j < data.links.length; j++){
         var link = data.links[j];
-        if(link.source < 0 || link.source >= data.nodes.length ||
-           link.target < 0 || link.target >= data.nodes.length ||
-           link.source === link.target)
+        if(!data.nodes[link.source] || !data.nodes[link.target] || link.source === link.target)
           throw 'D3RGraph: Link (source: '+link.source+', target: '+link.target+') does not exist.';
 
         var linkId = link.source + '-' + link.target;
